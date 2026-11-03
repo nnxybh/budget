@@ -9,124 +9,170 @@
 <meta name="apple-mobile-web-app-title" content="Budget">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="application-name" content="Budget">
-<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#121715" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1412" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
 <style>
-  /* Layout: one phone-width column. Two tabs: Budget (the plan) and Right now (end-of-month forecast). The tabs do not share numbers. */
+  /* One phone-width column. Every input sits in the same right-hand column (--in-w) so all boxes line up. */
   :root {
-    --bg: #f3f5f4; --surface: #ffffff; --field: #f3f6f5; --ink: #17211d; --muted: #5d6b65;
-    --line: #dde4e0; --accent: #1f6b57; --good: #1a7f4f; --bad: #c63a32; --bar-track: #dde4e0;
+    --bg: #f2f4f1; --surface: #ffffff; --field: #f4f7f5; --ink: #15201b; --muted: #5e6c66;
+    --line: #e1e7e3; --accent: #1f6b57; --good: #1a7f4f; --bad: #c63a32; --warn: #9a5b00;
+    --hero1: #1f6b57; --hero2: #0e3a30; --hero-bad: #ffb8b0;
+    --in-w: 164px;
     --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #121715; --surface: #1b231f; --field: #121815; --ink: #e8eeea; --muted: #9aaaa2;
-      --line: #2b3732; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --bar-track: #2b3732;
+      --bg: #0f1412; --surface: #18201c; --field: #111815; --ink: #e8eeea; --muted: #98a8a0;
+      --line: #27322d; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --warn: #f0b35a;
+      --hero1: #1c5a4a; --hero2: #0a221c;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #121715; --surface: #1b231f; --field: #121815; --ink: #e8eeea; --muted: #9aaaa2;
-    --line: #2b3732; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --bar-track: #2b3732;
+    --bg: #0f1412; --surface: #18201c; --field: #111815; --ink: #e8eeea; --muted: #98a8a0;
+    --line: #27322d; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --warn: #f0b35a;
+    --hero1: #1c5a4a; --hero2: #0a221c;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body);
-    font-size: 16px; line-height: 1.4; padding-block: 0 40px;
+    font-size: 16px; line-height: 1.4;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
   }
   body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
   .wrap { max-width: 560px; margin: 0 auto; }
-  header { padding-top: max(18px, env(safe-area-inset-top, 0px)); }
-  h1 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-  .sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  header { padding-top: max(20px, env(safe-area-inset-top, 0px)); }
+  .today { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--font-display); font-size: 30px; line-height: 1.1; margin: 4px 0 0; letter-spacing: -0.01em; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
-  .tabs button { min-height: 48px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  /* Tabs */
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 16px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+  .tabs button { min-height: 46px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
   .tabs button[aria-selected="true"] { background: var(--accent); color: var(--bg); }
   .panel[hidden] { display: none; }
 
-  .summary-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 12px; }
-  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
-  .stat .label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .stat .value { font-family: var(--font-display); font-size: 26px; line-height: 1.15; margin-top: 2px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-  .stat.wide .value { font-size: 34px; }
-  .value.pos { color: var(--good); }
-  .value.neg { color: var(--bad); }
-  .bar { height: 8px; border-radius: 99px; background: var(--bar-track); overflow: hidden; margin-top: 12px; }
-  .bar > div { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width 0.2s ease; }
-  .bar.over > div { background: var(--bad); }
-  .bar-label { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  /* Hero cards */
+  .sticky { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-top: 14px; padding-bottom: 2px; }
+  .hero {
+    margin-top: 14px; color: #fff; border-radius: 22px; padding: 16px;
+    background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(155deg, var(--hero1), var(--hero2));
+    box-shadow: 0 14px 30px -18px rgba(10, 50, 40, 0.7);
+  }
+  .sticky .hero { margin-top: 0; }
+  .hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .k { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+  .tile { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 10px 11px 11px; min-width: 0; }
+  .tile .v { font-family: var(--font-display); font-weight: 700; font-size: clamp(17px, 5.2vw, 24px); line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tiles.two .tile .v { font-size: clamp(22px, 7vw, 30px); }
+  .tile .d { font-size: 12px; opacity: 0.75; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v.neg { color: var(--hero-bad); }
+  .hbar { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.18); overflow: hidden; margin-top: 12px; }
+  .hbar > div { height: 100%; width: 0; background: #fff; border-radius: 99px; transition: width 0.25s ease; }
+  .hbar.over > div { background: var(--hero-bad); }
+  .hbar-label { margin-top: 6px; font-size: 13px; opacity: 0.8; }
+  .hero-warn { margin-top: 10px; font-size: 13px; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 10px; }
+  .hero-warn:empty { display: none; }
 
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 6px 16px; margin-top: 14px; }
-  .card h2 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; font-weight: 600; }
-  .row { display: flex; align-items: center; gap: 12px; padding-block: 6px; border-top: 1px solid var(--line); min-height: 60px; }
+  .chart { margin-top: 10px; }
+  .chart svg { display: block; width: 100%; height: 100px; overflow: visible; }
+  .chart-labels { position: relative; height: 16px; margin-top: 6px; font-size: 11px; opacity: 0.75; }
+  .chart-labels span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+  .chart-labels span.l { transform: none; }
+  .chart-labels span.r { transform: none; left: auto !important; right: 0; }
+
+  /* Cards and rows */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 4px 16px 6px; margin-top: 14px; }
+  .card h2 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 2px; font-weight: 600; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) var(--in-w); align-items: center; gap: 12px; min-height: 64px; padding-block: 8px; border-top: 1px solid var(--line); }
   h2 + .row, h2 + div > .row:first-child { border-top: 0; }
-  .row > label { flex: 1 1 0; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
-  .s { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
+  .row > label { font-size: 17px; overflow-wrap: anywhere; }
+  .s { display: block; font-size: 13px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .s.acc { color: var(--accent); font-weight: 500; }
   .name-input {
-    flex: 1 1 0; min-width: 0; height: 48px; font: inherit; font-size: 17px; color: var(--ink);
+    width: 100%; min-width: 0; height: 46px; font: inherit; font-size: 17px; color: var(--ink);
     background: transparent; border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 0 2px;
     -webkit-appearance: none; appearance: none;
   }
   .name-input::placeholder { color: var(--muted); opacity: 1; }
   .name-input:focus { outline: none; border-bottom: 1px solid var(--accent); }
-  .money { flex: 0 0 132px; display: flex; align-items: center; height: 48px; padding: 0 12px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
-  .money:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-  .money span { color: var(--muted); margin-right: 4px; font-size: 17px; }
-  .money input {
-    flex: 1; min-width: 0; width: 100%; height: 100%; border: 0; background: transparent; color: var(--ink);
+
+  .field { display: flex; align-items: center; width: var(--in-w); height: 48px; padding: 0 12px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
+  .field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .field > span { color: var(--muted); margin-right: 6px; font-size: 15px; flex: 0 0 auto; }
+  .field input {
+    flex: 1; min-width: 0; width: 100%; border: 0; background: transparent; color: var(--ink);
     font: inherit; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; padding: 0;
     -webkit-appearance: none; appearance: none; -moz-appearance: textfield;
   }
-  .money input:focus { outline: none; }
-  .money input::-webkit-outer-spin-button, .money input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .money input::placeholder { color: var(--muted); opacity: 0.7; }
-  .income .money { flex-basis: 150px; }
-  .income .money input { font-weight: 600; }
-  .hint { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+  .field input:focus { outline: none; }
+  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .field input::placeholder { color: var(--muted); opacity: 0.6; }
+  .field.date input { font-size: 16px; display: block; min-height: 1.4em; }
+  .field.date input::-webkit-date-and-time-value { text-align: right; }
+  .field.date input::-webkit-calendar-picker-indicator { opacity: 0.5; margin-left: 4px; }
+  .field.edited { border-color: var(--accent); }
+  .hint { font-size: 13px; color: var(--muted); margin: 6px 0 12px; }
 
-  .evt { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); min-height: 60px; }
-  .evt .t { min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
-  .evt .a { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 17px; }
-  .evt.total { font-weight: 600; }
-  .evt.total .a { font-family: var(--font-display); font-size: 22px; }
+  /* Bills: two aligned lines per bill */
+  .bill { padding-block: 12px; border-top: 1px solid var(--line); }
+  #billList .bill:first-child { border-top: 0; }
+  .g2 { display: grid; grid-template-columns: minmax(0, 1fr) var(--in-w); align-items: center; gap: 12px; }
+  .g2 + .g2 { margin-top: 8px; }
+  .bname { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
+  .pillwrap { position: relative; min-width: 0; }
+  .pill {
+    width: 100%; height: 40px; padding: 0 30px 0 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer;
+    -webkit-appearance: none; appearance: none; text-overflow: ellipsis;
+  }
+  .pillwrap::after { content: ""; position: absolute; right: 14px; top: 50%; width: 6px; height: 6px; margin-top: -5px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; }
+  .pill.static { display: flex; align-items: center; cursor: default; color: var(--muted); padding-right: 14px; }
+  .bnote { margin-top: 8px; font-size: 13px; }
+  .bnote:empty { display: none; }
+  .bnote.warn { color: var(--warn); }
+  .bnote.acc { color: var(--accent); }
 
-  .bill { padding-block: 10px; border-top: 1px solid var(--line); }
-  .bill:first-child { border-top: 0; }
-  .bname { display: block; font-size: 17px; margin-bottom: 6px; }
-  .bill .name-input { display: block; width: 100%; margin-bottom: 6px; }
-  .bline { display: flex; align-items: center; gap: 8px; }
-  .bline .money { flex: 1 1 0; min-width: 0; }
-  .datein { flex: 1 1 0; min-width: 0; height: 48px; padding: 0 10px; font: inherit; font-size: 17px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
-  .datein:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-  button.clr { flex: 0 0 44px; min-height: 48px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 22px; cursor: pointer; }
+  /* Fortnight breakdown */
+  .cycle { padding-block: 12px; border-top: 1px solid var(--line); }
+  #cycles .cycle:first-child { border-top: 0; }
+  .cy-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); white-space: nowrap; }
+  .cy-dates { font-size: 14px; color: var(--muted); }
+  .ln { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding-block: 6px; font-size: 16px; }
+  .ln small { display: block; font-size: 13px; color: var(--muted); }
+  .ln .amt { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ln .amt.pos { color: var(--good); }
+  .ln.total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; font-weight: 600; }
+  .ln.total .amt { font-family: var(--font-display); font-size: 22px; }
+  .amt.good { color: var(--good); }
+  .amt.bad { color: var(--bad); }
 
   .reset-wrap { margin-top: 18px; text-align: center; }
   button.ghost { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer; }
   button.ghost.armed { color: var(--bad); border-color: var(--bad); }
-  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
+  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 16px; }
   noscript p { padding: 16px; color: var(--bad); }
-  @media (max-width: 360px) { .money { flex-basis: 116px; } .stat .value { font-size: 22px; } .stat.wide .value { font-size: 30px; } }
-  @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
+  @media (max-width: 370px) { :root { --in-w: 146px; } .field { padding: 0 10px; } }
+  @media (prefers-reduced-motion: reduce) { .hbar > div { transition: none; } }
 </style>
 </head>
 <body>
 <noscript><p>This budget needs JavaScript turned on.</p></noscript>
 <div class="wrap">
   <header>
+    <p class="today" id="todayLine"></p>
     <h1>Monthly Budget</h1>
-    <p class="sub">Plan your month, then see where you will be. Numbers are saved on this phone.</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Views">
@@ -134,23 +180,25 @@
     <button type="button" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false">Right now</button>
   </div>
 
+  <!-- ===== Budget tab ===== -->
   <div class="panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget">
-    <div class="summary-bar" role="status" aria-live="polite">
-      <div class="summary">
-        <div class="stat"><div class="label">Total spending</div><div class="value" id="totalSpend">$0</div></div>
-        <div class="stat"><div class="label">Savings / month</div><div class="value pos" id="savings">$0</div></div>
-      </div>
-      <div class="bar" id="bar"><div id="barFill"></div></div>
-      <div class="bar-label" id="barLabel"></div>
+    <div class="sticky" role="status" aria-live="polite">
+      <section class="hero">
+        <div class="tiles two">
+          <div class="tile"><div class="k">Spending</div><div class="v" id="totalSpend">$0</div><div class="d">Each month</div></div>
+          <div class="tile"><div class="k">Savings</div><div class="v" id="savings">$0</div><div class="d">Each month</div></div>
+        </div>
+        <div class="hbar" id="bar"><div id="barFill"></div></div>
+        <div class="hbar-label" id="barLabel"></div>
+      </section>
     </div>
 
-    <section class="card income" aria-labelledby="inc-h">
+    <section class="card" aria-labelledby="inc-h">
       <h2 id="inc-h">Income</h2>
       <div class="row">
-        <label for="income">Monthly income (net)</label>
-        <div class="money"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+        <label for="income">Monthly income<span class="s">After tax</span></label>
+        <div class="field"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
       </div>
-      <p class="hint">Pay is $2,770 every fortnight, which averages about $6,000 a month.</p>
     </section>
 
     <section class="card" aria-labelledby="exp-h">
@@ -161,57 +209,99 @@
     <div class="reset-wrap"><button type="button" class="ghost" id="resetBtn">Reset budget to starting numbers</button></div>
   </div>
 
+  <!-- ===== Right now tab ===== -->
   <div class="panel" id="panel-now" role="tabpanel" aria-labelledby="tab-now" hidden>
-    <div class="summary-bar" role="status" aria-live="polite">
-      <div class="stat wide"><div class="label" id="endLabel">End of month</div><div class="value" id="endNow">$0</div></div>
-      <div class="bar-label" id="endNote"></div>
-    </div>
+    <section class="hero" role="status" aria-live="polite">
+      <div class="hero-top"><span class="k">Where your money is heading</span><span class="k" id="heroRange"></span></div>
+      <div class="chart"><svg id="chart" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"></svg><div class="chart-labels" id="chartLabels"></div></div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Today</div><div class="v" id="tToday">$0</div><div class="d">After card</div></div>
+        <div class="tile"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
+        <div class="tile"><div class="k" id="tEomK">End of month</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
+      </div>
+      <div class="hero-warn" id="heroWarn"></div>
+    </section>
 
-    <section class="card" aria-labelledby="fc-h">
-      <h2 id="fc-h">How it adds up</h2>
+    <section class="card" aria-labelledby="money-h">
+      <h2 id="money-h">Your money now</h2>
       <div class="row">
-        <label for="bank">Bank today</label>
-        <div class="money"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
-      </div>
-      <div class="row">
-        <label for="cardOwed">Minus: card bill so far<span class="s" id="cardWhen"></span></label>
-        <div class="money"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
-      </div>
-      <div class="evt">
-        <div class="t">Plus: pays coming<span class="s" id="paysWhen"></span></div>
-        <div class="a" id="paysAmt">$0</div>
-      </div>
-      <div class="evt">
-        <div class="t">Minus: bills coming<span class="s" id="billsWhen"></span><span class="s" id="billsMissing"></span></div>
-        <div class="a" id="billsAmt">$0</div>
+        <label for="bank">Bank today<span class="s">What your account shows</span></label>
+        <div class="field"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
       <div class="row">
-        <label for="plan">Minus: spending I plan<span class="s">Food, petrol, going out</span></label>
-        <div class="money"><span>$</span><input id="plan" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+        <label for="cardOwed">Card owed so far<span class="s" id="cardWhen"></span></label>
+        <div class="field"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
-      <div class="evt total">
-        <div class="t" id="endLabel2">End of month</div>
-        <div class="a" id="endAmt">$0</div>
+      <div class="row">
+        <label for="spend">Day-to-day spending<span class="s">Each fortnight: food, petrol, going out</span></label>
+        <div class="field"><span>$</span><input id="spend" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
     </section>
 
-    <section class="card" aria-labelledby="pb-h">
-      <h2 id="pb-h">Pay and bills</h2>
+    <section class="card" aria-labelledby="cy-h">
+      <h2 id="cy-h">Each fortnight</h2>
+      <div id="cycles"></div>
+    </section>
+
+    <section class="card" aria-labelledby="pay-h">
+      <h2 id="pay-h">Pay</h2>
+      <div class="row">
+        <label for="usualPay">Usual pay<span class="s">Every 2 weeks</span></label>
+        <div class="field"><span>$</span><input id="usualPay" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+      </div>
+      <div id="payList"></div>
+      <p class="hint">Acting or higher duties? Change that pay. Clear it to go back to your usual pay.</p>
+    </section>
+
+    <section class="card" aria-labelledby="bill-h">
+      <h2 id="bill-h">Bills</h2>
       <div id="billList"></div>
-      <p class="hint">Pick the next date each one comes out. Bills repeat every month. Pay and swimming repeat every 2 weeks. Bills without a date are not counted.</p>
+      <p class="hint">Paying late or early? Change the next date. After that it goes back to its usual day.</p>
     </section>
   </div>
 
-  <p class="foot">Amounts are in AUD. Saved only in this browser.</p>
+  <p class="foot">Amounts in AUD. Saved only on this phone.</p>
 </div>
 
 <script>
 (function () {
   var KEY = "budget-v3";
   var DEFAULT_INCOME = 5995;
-  var TIMES = String.fromCharCode(215);
+  var DEFAULT_PAY = "2770";
+  var PAY_ANCHOR = "2026-11-04";
 
-  /* ---------- Budget tab ---------- */
+  function byId(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function numv(v) { var n = parseFloat(v); if (!isFinite(n) || n < 0) return 0; return Math.min(n, 1e9); }
+  function num(e) { return numv(e.value); }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function selectAll(e) { var t = e.target; setTimeout(function () { try { t.select(); } catch (x) {} }, 0); }
+
+  var fmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  var fmt0 = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
+  var dayFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  var shortFmt = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" });
+  var monShort = new Intl.DateTimeFormat("en-AU", { month: "short" });
+  var longFmt = new Intl.DateTimeFormat("en-AU", { weekday: "long", day: "numeric", month: "long" });
+  function signed(n) { return (n < 0 ? "-" : "+") + fmt.format(Math.abs(n)); }
+  function minus(n) { return n > 0 ? "-" + fmt.format(n) : fmt.format(0); }
+  function ord(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function diffDays(a, b) { return Math.round((b - a) / 86400000); }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function parseDate(s) {
+    var p = String(s || "").split("-");
+    if (p.length !== 3) return null;
+    var y = +p[0], m = +p[1], d = +p[2];
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+  function onDay(y, m, day) { var last = new Date(y, m + 1, 0).getDate(); return new Date(y, m, Math.min(day, last)); }
+
+  /* ================= Budget tab ================= */
   var items = [
     ["Rent", 2600], ["Food", 400], ["Utilities", null], ["Petrol", 200],
     ["Phone", 55], ["Internet", 70], ["Kids' swimming", 104], ["Haircuts", 100],
@@ -221,311 +311,498 @@
     ["Eating out", 100], ["Afterpay", 50], ["Miscellaneous costs", null]
   ];
   var BLANKS = 4;
-
-  var list = document.getElementById("expenses");
-  var incomeEl = document.getElementById("income");
-  var bankEl = document.getElementById("bank");
-  var cardEl = document.getElementById("cardOwed");
-  var planEl = document.getElementById("plan");
+  var list = byId("expenses");
+  var incomeEl = byId("income");
   var rows = [];
   var uid = 0;
   var curTab = "budget";
 
-  function selectAll(e) { var el = e.target; setTimeout(function () { try { el.select(); } catch (x) {} }, 0); }
+  function moneyField(id, label) {
+    var f = el("div", "field");
+    f.appendChild(el("span", "", "$"));
+    var i = document.createElement("input");
+    i.type = "number"; i.id = id; i.inputMode = "decimal"; i.min = "0"; i.step = "any";
+    i.autocomplete = "off"; i.placeholder = "0";
+    i.setAttribute("enterkeyhint", "done");
+    if (label) i.setAttribute("aria-label", label);
+    i.addEventListener("focus", selectAll);
+    f.appendChild(i);
+    return { wrap: f, input: i };
+  }
 
   function addRow(name, amount, editable) {
     uid++;
-    var row = document.createElement("div");
-    row.className = "row";
+    var row = el("div", "row");
     var nameEl;
     if (editable) {
       nameEl = document.createElement("input");
-      nameEl.type = "text";
-      nameEl.id = "other-name-" + uid;
-      nameEl.className = "name-input";
-      nameEl.placeholder = "Other";
-      nameEl.maxLength = 40;
+      nameEl.type = "text"; nameEl.className = "name-input"; nameEl.placeholder = "Other";
+      nameEl.maxLength = 40; nameEl.autocomplete = "off";
       nameEl.setAttribute("aria-label", "Expense name");
-      nameEl.autocomplete = "off";
       nameEl.addEventListener("input", update);
     } else {
-      nameEl = document.createElement("label");
+      nameEl = el("label", "", name);
       nameEl.htmlFor = "amt-" + uid;
-      nameEl.textContent = name;
     }
-    var money = document.createElement("div");
-    money.className = "money";
-    money.innerHTML = '<span>$</span><input class="amt" id="amt-' + uid + '" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0">';
-    var input = money.querySelector("input");
-    if (amount !== null) input.value = amount;
-    if (editable) input.setAttribute("aria-label", "Amount for other expense");
-    input.addEventListener("input", update);
-    input.addEventListener("focus", selectAll);
+    var m = moneyField("amt-" + uid, editable ? "Amount for other expense" : null);
+    if (amount !== null) m.input.value = amount;
+    m.input.addEventListener("input", update);
     row.appendChild(nameEl);
-    row.appendChild(money);
+    row.appendChild(m.wrap);
     list.appendChild(row);
-    rows.push({ name: name, nameEl: editable ? nameEl : null, amtEl: input, defAmt: amount });
+    rows.push({ nameEl: editable ? nameEl : null, amtEl: m.input, defAmt: amount });
   }
-
   items.forEach(function (i) { addRow(i[0], i[1], false); });
-  for (var b = 0; b < BLANKS; b++) addRow("", null, true);
+  for (var b0 = 0; b0 < BLANKS; b0++) addRow("", null, true);
 
-  var fmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  var dateFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
-  var shortFmt = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" });
-  var monthFmt = new Intl.DateTimeFormat("en-AU", { month: "long" });
-  function num(el) { var v = parseFloat(el.value); if (!isFinite(v) || v < 0) return 0; return Math.min(v, 1e9); }
-  function round2(n) { return Math.round(n * 100) / 100; }
-  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
-  function diffDays(a, b) { return Math.round((b - a) / 86400000); }
-  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
-  function byId(id) { return document.getElementById(id); }
-
-  /* ---------- Right now tab: its own pay and bills list ---------- */
-  /* type "m" repeats monthly on the picked day. Type "f" repeats every 14 days from the picked date. */
-  var ITEMS = [
-    { id: "pay", kind: "pay", name: "Pay", type: "f", a: "2770", d: "2026-11-04" },
-    { id: "rent", kind: "bill", name: "Rent", type: "m", a: "2600", d: "2026-12-01" },
-    { id: "debt", kind: "bill", name: "Debt repayment", type: "m", a: "500", d: "" },
-    { id: "phone", kind: "bill", name: "Phone", type: "m", a: "55", d: "2026-11-06" },
-    { id: "net", kind: "bill", name: "Internet", type: "m", a: "70", d: "2026-11-28" },
-    { id: "swim", kind: "bill", name: "Swimming", type: "f", a: "48", d: "2026-11-05" },
-    { id: "apple", kind: "bill", name: "Apple", type: "m", a: "52.95", d: "2026-11-05" },
-    { id: "o1", kind: "bill", name: "", type: "m", a: "", d: "", other: true },
-    { id: "o2", kind: "bill", name: "", type: "m", a: "", d: "", other: true }
-  ];
-
-  function itemName(it) {
-    if (it.other) { var n = it.nameEl.value.trim(); return n || "Other bill"; }
-    return it.name;
-  }
-  function buildList() {
-    var box = byId("billList");
-    box.textContent = "";
-    ITEMS.forEach(function (it) {
-      var wrap = document.createElement("div");
-      wrap.className = "bill";
-      if (it.other) {
-        var ni = document.createElement("input");
-        ni.type = "text";
-        ni.id = "bn-" + it.id;
-        ni.className = "name-input";
-        ni.placeholder = "Other bill";
-        ni.maxLength = 40;
-        ni.autocomplete = "off";
-        ni.setAttribute("aria-label", "Bill name");
-        ni.addEventListener("input", update);
-        it.nameEl = ni;
-        wrap.appendChild(ni);
-      } else {
-        var lab = document.createElement("label");
-        lab.className = "bname";
-        lab.htmlFor = "ba-" + it.id;
-        lab.textContent = it.name + (it.type === "f" ? " (every 2 weeks)" : "");
-        wrap.appendChild(lab);
-      }
-      var line = document.createElement("div");
-      line.className = "bline";
-      var money = document.createElement("div");
-      money.className = "money";
-      money.innerHTML = '<span>$</span><input id="ba-' + it.id + '" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0">';
-      var ai = money.querySelector("input");
-      ai.value = it.a;
-      if (it.other) ai.setAttribute("aria-label", "Amount");
-      ai.addEventListener("input", update);
-      ai.addEventListener("focus", selectAll);
-      it.amtEl = ai;
-      var di = document.createElement("input");
-      di.type = "date";
-      di.id = "bd-" + it.id;
-      di.className = "datein";
-      di.value = it.d;
-      di.setAttribute("aria-label", "Next date for " + (it.other ? "this bill" : it.name));
-      it.dateEl = di;
-      var clr = document.createElement("button");
-      clr.type = "button";
-      clr.className = "clr";
-      clr.textContent = TIMES;
-      clr.setAttribute("aria-label", "Clear the date");
-      clr.hidden = !di.value;
-      it.clrEl = clr;
-      function changed() { clr.hidden = !di.value; update(); }
-      di.addEventListener("input", changed);
-      di.addEventListener("change", changed);
-      clr.addEventListener("click", function () { di.value = ""; changed(); });
-      line.appendChild(money);
-      line.appendChild(di);
-      line.appendChild(clr);
-      wrap.appendChild(line);
-      box.appendChild(wrap);
-    });
-  }
-
-  function parseDate(s) {
-    var p = String(s || "").split("-");
-    if (p.length !== 3) return null;
-    var y = +p[0], m = +p[1], d = +p[2];
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-  /* Dates from "from" to "end" (both included) that this item falls on. */
-  function occurrences(base, type, from, end) {
-    var out = [];
-    if (type === "m") {
-      for (var i = 0; i < 2; i++) {
-        var last = new Date(from.getFullYear(), from.getMonth() + i + 1, 0).getDate();
-        var d = new Date(from.getFullYear(), from.getMonth() + i, Math.min(base.getDate(), last));
-        if (d >= from && d <= end && d >= base) out.push(d);
-      }
-    } else {
-      var k = Math.floor(diffDays(base, from) / 14);
-      for (var j = k; j <= k + 3; j++) {
-        var d2 = addDays(base, j * 14);
-        if (d2 >= from && d2 <= end && d2 >= base) out.push(d2);
-      }
-    }
-    return out;
-  }
-
-  function renderNow() {
-    var today = startOfDay(new Date());
-    var end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    var tomorrow = addDays(today, 1);
-    var month = monthFmt.format(today);
-    var payTotal = 0, billTotal = 0;
-    var pays = [], bills = [], missing = [];
-
-    ITEMS.forEach(function (it) {
-      var a = round2(num(it.amtEl));
-      if (a <= 0) return;
-      var base = parseDate(it.dateEl.value);
-      if (!base) { if (it.kind === "bill") missing.push(itemName(it)); return; }
-      if (it.kind === "pay") {
-        occurrences(base, it.type, today, end).forEach(function (d) { pays.push(d); payTotal += a; });
-      } else {
-        occurrences(base, it.type, tomorrow, end).forEach(function (d) { bills.push({ name: itemName(it), date: d }); billTotal += a; });
-      }
-    });
-    pays.sort(function (x, y) { return x - y; });
-    bills.sort(function (x, y) { return x.date - y.date; });
-    payTotal = round2(payTotal);
-    billTotal = round2(billTotal);
-
-    var cd = today.getDate();
-    var cardDay = new Date(today.getFullYear(), today.getMonth() + (cd > 21 ? 1 : 0), 21);
-    byId("cardWhen").textContent = cd === 21 ? "Pay in full today" : "Pay in full " + dateFmt.format(cardDay);
-    byId("paysAmt").textContent = fmt.format(payTotal);
-    byId("paysWhen").textContent = pays.length
-      ? plural(pays.length, "pay") + ": " + pays.map(function (d) { return shortFmt.format(d); }).join(", ")
-      : "No pays before the end of " + month;
-    byId("billsAmt").textContent = fmt.format(billTotal);
-    byId("billsWhen").textContent = bills.length
-      ? bills.map(function (b) { return b.name + " " + shortFmt.format(b.date); }).join(", ")
-      : "No dated bills left in " + month;
-    byId("billsMissing").textContent = missing.length ? "Not counted, no date: " + missing.join(", ") : "";
-
-    var total = round2(num(bankEl) - num(cardEl) + payTotal - billTotal - num(planEl));
-    var label = "End of " + month;
-    byId("endLabel").textContent = label;
-    byId("endLabel2").textContent = label;
-    byId("endAmt").textContent = fmt.format(total);
-    var ev = byId("endNow");
-    ev.textContent = fmt.format(total);
-    ev.className = "value " + (total >= 0 ? "pos" : "neg");
-    byId("endNote").textContent = bankEl.value === ""
-      ? "Type your bank balance below to see where you will be."
-      : "Forecast for " + dateFmt.format(end) + ", after " + plural(pays.length, "pay") + " and your bills.";
-  }
-
-  /* ---------- saving and loading ---------- */
-  function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify({
-        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, plan: planEl.value, tab: curTab,
-        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
-        items: ITEMS.map(function (it) { return { n: it.nameEl ? it.nameEl.value : "", a: it.amtEl.value, d: it.dateEl.value }; })
-      }));
-    } catch (e) {}
-  }
-  function applyBudgetDefaults() {
-    incomeEl.value = DEFAULT_INCOME;
-    rows.forEach(function (r) {
-      r.amtEl.value = r.defAmt === null ? "" : r.defAmt;
-      if (r.nameEl) r.nameEl.value = "";
-    });
-  }
-  function applyItemDefaults() {
-    ITEMS.forEach(function (it) {
-      it.amtEl.value = it.a;
-      it.dateEl.value = it.d;
-      it.clrEl.hidden = !it.dateEl.value;
-      if (it.nameEl) it.nameEl.value = "";
-    });
-  }
-  function applyAllDefaults() {
-    applyBudgetDefaults();
-    applyItemDefaults();
-    bankEl.value = ""; cardEl.value = ""; planEl.value = "";
-  }
-  function load() {
-    var raw = null;
-    try { raw = localStorage.getItem(KEY); } catch (e) {}
-    if (!raw) { applyAllDefaults(); return; }
-    try {
-      var d = JSON.parse(raw);
-      if (!d || !Array.isArray(d.rows) || d.rows.length !== rows.length) throw new Error("shape");
-      incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
-      bankEl.value = d.bank == null ? "" : d.bank;
-      cardEl.value = d.card == null ? "" : d.card;
-      planEl.value = d.plan == null ? "" : d.plan;
-      curTab = d.tab === "now" ? "now" : "budget";
-      d.rows.forEach(function (s, i) {
-        rows[i].amtEl.value = s && s.a != null ? s.a : "";
-        if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
-      });
-      if (Array.isArray(d.items) && d.items.length === ITEMS.length) {
-        d.items.forEach(function (s, i) {
-          var it = ITEMS[i];
-          it.amtEl.value = s && s.a != null ? s.a : "";
-          it.dateEl.value = s && typeof s.d === "string" ? s.d : "";
-          it.clrEl.hidden = !it.dateEl.value;
-          if (it.nameEl) it.nameEl.value = s && typeof s.n === "string" ? s.n : "";
-        });
-      } else { applyItemDefaults(); }
-    } catch (e) { applyAllDefaults(); }
-  }
-
-  /* ---------- totals on the Budget tab ---------- */
-  function update() {
+  function renderBudget() {
     var income = num(incomeEl);
     var total = 0;
     rows.forEach(function (r) { total += num(r.amtEl); });
     total = round2(total);
     var savings = round2(income - total);
-
-    byId("totalSpend").textContent = fmt.format(total);
+    byId("totalSpend").textContent = fmt0.format(total);
     var s = byId("savings");
-    s.textContent = fmt.format(savings);
-    s.className = "value " + (savings >= 0 ? "pos" : "neg");
-
+    s.textContent = fmt0.format(savings);
+    s.className = "v" + (savings < 0 ? " neg" : "");
     var pct = income > 0 ? (total / income) * 100 : (total > 0 ? 100 : 0);
     byId("barFill").style.width = Math.min(100, pct) + "%";
-    byId("bar").className = "bar" + (savings < 0 ? " over" : "");
+    byId("bar").className = "hbar" + (savings < 0 ? " over" : "");
     byId("barLabel").textContent = income > 0
-      ? Math.round(pct) + "% of income spent" + (savings < 0 ? " (over budget)" : "")
+      ? Math.round(pct) + "% of your " + fmt0.format(income) + " income" + (savings < 0 ? " (over budget)" : "")
       : "Enter your income to see savings";
+  }
 
+  /* ================= Right now tab ================= */
+  var bankEl = byId("bank"), cardEl = byId("cardOwed"), spendEl = byId("spend"), usualEl = byId("usualPay");
+  var payOv = {};
+
+  /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
+  var BILLS = [
+    { id: "rent", name: "Rent", every: "m", da: "2600", dday: 1, dnext: "2026-11-04" },
+    { id: "debt", name: "Debt repayment", every: "m", da: "500", dday: 0, dnext: "" },
+    { id: "phone", name: "Phone", every: "m", da: "55", dday: 6, dnext: "" },
+    { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "" },
+    { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05" },
+    { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "" },
+    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true },
+    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true }
+  ];
+  function billName(b) { if (b.other) { var n = (b.n || "").trim(); return n || "Other bill"; } return b.name; }
+
+  /* Dates a bill falls on between from and to. A moved "next" date replaces the usual date nearest to it. */
+  function billPlan(b, from, to) {
+    var o = parseDate(b.next), out = [], moved = null;
+    if (b.every === "f") {
+      if (!o) return { dates: out, moved: null };
+      var k = Math.ceil(diffDays(o, from) / 14);
+      if (k > 0) o = addDays(o, 14 * k);
+      while (o <= to) { out.push(o); o = addDays(o, 14); }
+      return { dates: out, moved: null };
+    }
+    var day = b.day || (o ? o.getDate() : 0);
+    if (!day) return { dates: out, moved: null };
+    var y, m;
+    if (o) {
+      var best = null, bk = 0;
+      for (var j = -1; j <= 1; j++) {
+        var c = onDay(o.getFullYear(), o.getMonth() + j, day);
+        if (best === null || Math.abs(c - o) < Math.abs(best - o)) { best = c; bk = j; }
+      }
+      if (o >= from) {
+        if (o <= to) out.push(o);
+        if (best.getTime() !== o.getTime()) moved = best;
+      }
+      y = o.getFullYear(); m = o.getMonth() + bk + 1;
+      var minM = from.getMonth() - 1 + (from.getFullYear() - y) * 12;
+      if (m < minM) m = minM;
+    } else {
+      y = from.getFullYear(); m = from.getMonth() - 1;
+    }
+    for (var i = 0; i < 40; i++) {
+      var d = onDay(y, m + i, day);
+      if (d > to) break;
+      if (d >= from) out.push(d);
+    }
+    out.sort(function (a, b2) { return a - b2; });
+    return { dates: out, moved: moved };
+  }
+  function payDates(from, to) { return billPlan({ every: "f", next: PAY_ANCHOR }, from, to).dates; }
+  function payAmt(d) { var k = iso(d); return payOv[k] != null ? numv(payOv[k]) : num(usualEl); }
+
+  /* ---- build the bills list ---- */
+  function buildBills() {
+    var box = byId("billList");
+    box.textContent = "";
+    BILLS.forEach(function (b) {
+      var wrap = el("div", "bill");
+      var top = el("div", "g2");
+      var m = moneyField("ba-" + b.id, b.other ? "Amount" : null);
+      if (b.other) {
+        var ni = document.createElement("input");
+        ni.type = "text"; ni.className = "name-input"; ni.placeholder = "Other bill";
+        ni.maxLength = 40; ni.autocomplete = "off";
+        ni.setAttribute("aria-label", "Bill name");
+        ni.addEventListener("input", function () { b.n = ni.value; update(); });
+        b.nameEl = ni;
+        top.appendChild(ni);
+      } else {
+        var lab = el("label", "bname", b.name);
+        lab.htmlFor = "ba-" + b.id;
+        top.appendChild(lab);
+      }
+      m.input.addEventListener("input", function () { b.a = m.input.value; update(); });
+      b.amtEl = m.input;
+      top.appendChild(m.wrap);
+
+      var bot = el("div", "g2");
+      if (b.every === "m") {
+        var pw = el("div", "pillwrap");
+        var sel = document.createElement("select");
+        sel.className = "pill";
+        sel.setAttribute("aria-label", "Usual day for " + (b.other ? "this bill" : b.name));
+        sel.appendChild(new Option("No set day", "0"));
+        for (var dd = 1; dd <= 31; dd++) sel.appendChild(new Option("Due the " + ord(dd), String(dd)));
+        sel.addEventListener("change", function () { b.day = +sel.value || 0; b.next = ""; update(); });
+        b.selEl = sel;
+        pw.appendChild(sel);
+        bot.appendChild(pw);
+      } else {
+        bot.appendChild(el("div", "pill static", "Every 2 weeks"));
+      }
+      var df = el("label", "field date");
+      df.appendChild(el("span", "", "Next"));
+      var di = document.createElement("input");
+      di.type = "date"; di.id = "bd-" + b.id;
+      di.setAttribute("aria-label", "Next date for " + (b.other ? "this bill" : b.name));
+      function changed() {
+        b.next = di.value;
+        if (b.every === "m" && !b.day && di.value) {
+          var pd = parseDate(di.value);
+          if (pd) { b.day = pd.getDate(); b.selEl.value = String(b.day); }
+        }
+        update();
+      }
+      di.addEventListener("change", changed);
+      di.addEventListener("input", changed);
+      b.dateEl = di;
+      df.appendChild(di);
+      bot.appendChild(df);
+
+      var note = el("div", "bnote");
+      b.noteEl = note;
+      wrap.appendChild(top);
+      wrap.appendChild(bot);
+      wrap.appendChild(note);
+      box.appendChild(wrap);
+    });
+  }
+  function syncBillInputs() {
+    BILLS.forEach(function (b) {
+      b.amtEl.value = b.a;
+      if (b.selEl) b.selEl.value = String(b.day || 0);
+      if (b.nameEl) b.nameEl.value = b.n || "";
+    });
+  }
+
+  /* ---- pay list: next 4 pays, each can be changed ---- */
+  var payKeys = "";
+  var payRows = [];
+  function buildPays(dates, today) {
+    var key = dates.map(iso).join(",");
+    if (key === payKeys) return;
+    payKeys = key;
+    var box = byId("payList");
+    box.textContent = "";
+    payRows = [];
+    dates.forEach(function (d) {
+      var k = iso(d);
+      var row = el("div", "row");
+      var lab = el("label", "", dayFmt.format(d));
+      lab.htmlFor = "pa-" + k;
+      var sub = el("span", "s");
+      lab.appendChild(sub);
+      var m = moneyField("pa-" + k, null);
+      m.input.addEventListener("input", function () {
+        var v = m.input.value;
+        if (v === "" || numv(v) === num(usualEl)) delete payOv[k]; else payOv[k] = v;
+        update();
+      });
+      m.input.addEventListener("blur", function () { if (m.input.value === "") { m.input.value = usualEl.value; } });
+      row.appendChild(lab);
+      row.appendChild(m.wrap);
+      box.appendChild(row);
+      payRows.push({ d: d, k: k, sub: sub, input: m.input, wrap: m.wrap });
+    });
+  }
+  function renderPays(today) {
+    payRows.forEach(function (p) {
+      var ov = payOv[p.k] != null;
+      if (document.activeElement !== p.input) p.input.value = ov ? payOv[p.k] : usualEl.value;
+      p.wrap.classList.toggle("edited", ov);
+      var n = diffDays(today, p.d);
+      var when = n === 0 ? "Tonight" : n === 1 ? "Tomorrow" : "In " + n + " days";
+      p.sub.textContent = ov ? when + ". Usually " + fmt.format(num(usualEl)) : when;
+      p.sub.className = "s" + (ov ? " acc" : "");
+    });
+  }
+
+  /* ---- the forecast ---- */
+  function forecast(today) {
+    var eom = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    var pays = payDates(today, addDays(today, 70));
+    var H = eom;
+    if (pays[2] && pays[2] > H) H = pays[2];
+    var ev = {};
+    function slot(d) { var k = iso(d); return ev[k] || (ev[k] = { bills: [], pay: 0, isPay: false }); }
+    var missing = [];
+    BILLS.forEach(function (b) {
+      var a = round2(numv(b.a));
+      if (a <= 0) return;
+      var plan = billPlan(b, today, H);
+      if (!plan.dates.length && !(b.every === "m" && (b.day || b.next)) && !(b.every === "f" && b.next)) missing.push(billName(b));
+      plan.dates.forEach(function (d) { slot(d).bills.push({ name: billName(b), a: a, d: d }); });
+    });
+    pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
+    var rate = num(spendEl) / 14;
+    var bal = num(bankEl) - num(cardEl);
+    var start = bal;
+    var days = [], idx = {};
+    for (var d = today, i = 0; d <= H; d = addDays(d, 1), i++) {
+      var s = ev[iso(d)] || { bills: [], pay: 0, isPay: false };
+      var billSum = 0;
+      s.bills.forEach(function (x) { billSum += x.a; });
+      var spent = i > 0 ? rate : 0;
+      bal = bal - spent;
+      var before = bal;
+      bal = bal + s.pay - billSum;
+      idx[iso(d)] = days.length;
+      days.push({ d: d, before: before, after: bal, bills: s.bills, billSum: billSum, spent: spent, pay: s.pay, isPay: s.isPay });
+    }
+    return { today: today, eom: eom, H: H, pays: pays, days: days, idx: idx, start: start, missing: missing };
+  }
+
+  function setVal(id, v) {
+    var e = byId(id);
+    e.textContent = fmt0.format(Math.round(v));
+    e.className = "v" + (v < 0 ? " neg" : "");
+  }
+
+  function drawChart(f) {
+    var svg = byId("chart");
+    var W = 300, HH = 100, P = 8;
+    var pts = [];
+    f.days.forEach(function (x, i) { if (x.isPay) pts.push({ i: i, v: x.before }); pts.push({ i: i, v: x.after }); });
+    var n = f.days.length;
+    var lo = Infinity, hi = -Infinity;
+    pts.forEach(function (p) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; });
+    if (hi - lo < 1) { hi += 50; lo -= 50; }
+    function X(i) { return n > 1 ? (i / (n - 1)) * W : W / 2; }
+    function Y(v) { return P + (1 - (v - lo) / (hi - lo)) * (HH - 2 * P); }
+    var line = "";
+    pts.forEach(function (p, j) { line += (j ? " L" : "M") + X(p.i).toFixed(1) + " " + Y(p.v).toFixed(1); });
+    var area = line + " L" + W + " " + HH + " L0 " + HH + " Z";
+    var s = '<defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>';
+    f.days.forEach(function (x, i) {
+      if (x.isPay) s += '<line x1="' + X(i).toFixed(1) + '" y1="0" x2="' + X(i).toFixed(1) + '" y2="' + HH + '" stroke="#fff" stroke-opacity="0.16" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+    });
+    if (lo < 0 && hi > 0) s += '<line x1="0" y1="' + Y(0).toFixed(1) + '" x2="' + W + '" y2="' + Y(0).toFixed(1) + '" stroke="#ffb8b0" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
+    var ei = f.idx[iso(f.eom)];
+    if (ei != null && ei < n - 1) s += '<line x1="' + X(ei).toFixed(1) + '" y1="0" x2="' + X(ei).toFixed(1) + '" y2="' + HH + '" stroke="#fff" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>';
+    s += '<path d="' + area + '" fill="url(#gfill)"/>';
+    s += '<path d="' + line + '" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    svg.innerHTML = s;
+
+    var labels = byId("chartLabels");
+    labels.textContent = "";
+    var a = el("span", "l", "Today"); a.style.left = "0";
+    labels.appendChild(a);
+    var eomName = "End of " + monShort.format(f.eom);
+    var pct = n > 1 ? (ei / (n - 1)) * 100 : 100;
+    var e = el("span", "", eomName);
+    if (pct > 82) e.className = "r"; else e.style.left = pct + "%";
+    if (pct >= 18) labels.appendChild(e);
+    if (pct <= 72) { var r = el("span", "r", shortFmt.format(f.H)); labels.appendChild(r); }
+    byId("heroRange").textContent = shortFmt.format(f.today) + " to " + shortFmt.format(f.H);
+  }
+
+  function ledgerLine(box, label, sub, amt, cls) {
+    var ln = el("div", "ln" + (cls ? " " + cls : ""));
+    var l = el("span", "", label);
+    if (sub) l.appendChild(el("small", "", sub));
+    ln.appendChild(l);
+    ln.appendChild(el("span", "amt", amt));
+    box.appendChild(ln);
+    return ln;
+  }
+
+  function renderCycles(f) {
+    var box = byId("cycles");
+    box.textContent = "";
+    var p = f.pays;
+    var names = ["This fortnight", "Next fortnight"];
+    for (var k = 0; k < 2; k++) {
+      if (!p[k + 1]) break;
+      var a = f.idx[iso(p[k])], b = f.idx[iso(p[k + 1])];
+      if (a == null || b == null) break;
+      var startBal = f.days[a].before, pay = f.days[a].pay;
+      var bills = [], billSum = 0, spent = 0;
+      for (var i = a; i <= b; i++) {
+        if (i < b) { f.days[i].bills.forEach(function (x) { bills.push(x); }); billSum += f.days[i].billSum; }
+        if (i > a) spent += f.days[i].spent;
+      }
+      var end = f.days[b].before;
+      var c = el("div", "cycle");
+      var head = el("div", "cy-head");
+      head.appendChild(el("span", "chip", names[k]));
+      head.appendChild(el("span", "cy-dates", "Pay " + dayFmt.format(p[k]) + " to " + dayFmt.format(p[k + 1])));
+      c.appendChild(head);
+      ledgerLine(c, "Before pay lands", null, fmt.format(round2(startBal)));
+      ledgerLine(c, "Pay", null, signed(round2(pay))).lastChild.className = "amt pos";
+      ledgerLine(c, "Bills", bills.length ? bills.map(function (x) { return x.name + " " + shortFmt.format(x.d); }).join(", ") : "None", minus(round2(billSum)));
+      ledgerLine(c, "Day-to-day", spent > 0 ? "14 days" : "Not set yet", minus(round2(spent)));
+      var t = ledgerLine(c, "Left before next pay", null, fmt.format(round2(end)), "total");
+      t.lastChild.className = "amt " + (end < 0 ? "bad" : "good");
+      box.appendChild(c);
+    }
+  }
+
+  function renderBills(today, far) {
+    BILLS.forEach(function (b) {
+      var plan = billPlan(b, today, far);
+      var first = plan.dates[0] || null;
+      if (document.activeElement !== b.dateEl) b.dateEl.value = first ? iso(first) : "";
+      var a = numv(b.a);
+      if (a > 0 && !first) { b.noteEl.textContent = "Not counted until it has a date"; b.noteEl.className = "bnote warn"; }
+      else if (plan.moved && first) { b.noteEl.textContent = "Moved from " + dayFmt.format(plan.moved) + " this time"; b.noteEl.className = "bnote acc"; }
+      else { b.noteEl.textContent = ""; b.noteEl.className = "bnote"; }
+    });
+  }
+
+  function renderNow() {
+    var today = startOfDay(new Date());
+    byId("todayLine").textContent = longFmt.format(today);
+    var cd = today.getDate();
+    var cardDay = new Date(today.getFullYear(), today.getMonth() + (cd > 21 ? 1 : 0), 21);
+    byId("cardWhen").textContent = cd === 21 ? "Paid off today" : "Paid off " + dayFmt.format(cardDay);
+
+    var f = forecast(today);
+    buildPays(f.pays.slice(0, 4), today);
+    renderPays(today);
+    renderBills(today, addDays(today, 400));
+
+    setVal("tToday", f.start);
+    var p0 = f.pays[0];
+    if (p0 && f.idx[iso(p0)] != null) {
+      setVal("tPay", f.days[f.idx[iso(p0)]].before);
+      byId("tPayD").textContent = diffDays(today, p0) === 0 ? "Tonight" : dayFmt.format(p0);
+    }
+    byId("tEomK").textContent = "End of " + monShort.format(f.eom);
+    setVal("tEom", f.days[f.idx[iso(f.eom)]].after);
+    byId("tEomD").textContent = dayFmt.format(f.eom);
+    var warn = [];
+    if (bankEl.value === "") warn.push("Type your bank balance below to start.");
+    if (f.missing.length) warn.push("Not counted yet (no date): " + f.missing.join(", ") + ".");
+    byId("heroWarn").textContent = warn.join(" ");
+
+    drawChart(f);
+    renderCycles(f);
+  }
+
+  /* ================= saving and loading ================= */
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        v: 4, tab: curTab,
+        income: incomeEl.value,
+        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
+        bank: bankEl.value, card: cardEl.value, spend: spendEl.value, usualPay: usualEl.value, payOv: payOv,
+        bills: BILLS.map(function (b) { return { n: b.n || "", a: b.a, day: b.day || 0, next: b.next || "" }; })
+      }));
+    } catch (e) {}
+  }
+  function budgetDefaults() {
+    incomeEl.value = DEFAULT_INCOME;
+    rows.forEach(function (r) { r.amtEl.value = r.defAmt === null ? "" : r.defAmt; if (r.nameEl) r.nameEl.value = ""; });
+  }
+  function nowDefaults() {
+    usualEl.value = DEFAULT_PAY;
+    payOv = {};
+    spendEl.value = "";
+    BILLS.forEach(function (b) { b.a = b.da; b.day = b.dday; b.next = b.dnext; b.n = ""; });
+  }
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    budgetDefaults();
+    nowDefaults();
+    bankEl.value = ""; cardEl.value = "";
+    if (!raw) return;
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { return; }
+    if (!d || typeof d !== "object") return;
+    curTab = d.tab === "now" ? "now" : "budget";
+    if (Array.isArray(d.rows) && d.rows.length === rows.length) {
+      incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
+      d.rows.forEach(function (s, i) {
+        rows[i].amtEl.value = s && s.a != null ? s.a : "";
+        if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
+      });
+    }
+    bankEl.value = d.bank == null ? "" : d.bank;
+    cardEl.value = d.card == null ? "" : d.card;
+    if (d.v === 4) {
+      spendEl.value = d.spend == null ? "" : d.spend;
+      usualEl.value = d.usualPay == null || d.usualPay === "" ? DEFAULT_PAY : d.usualPay;
+      if (d.payOv && typeof d.payOv === "object") {
+        Object.keys(d.payOv).forEach(function (k) { if (parseDate(k)) payOv[k] = String(d.payOv[k]); });
+      }
+      if (Array.isArray(d.bills) && d.bills.length === BILLS.length) {
+        d.bills.forEach(function (s, i) {
+          if (!s) return;
+          var b = BILLS[i];
+          b.a = s.a == null ? "" : String(s.a);
+          b.day = +s.day || 0;
+          b.next = typeof s.next === "string" ? s.next : "";
+          b.n = typeof s.n === "string" ? s.n : "";
+        });
+      }
+    } else if (Array.isArray(d.items) && d.items.length === 9) {
+      /* carry over numbers from the previous version */
+      if (d.items[0] && d.items[0].a) usualEl.value = d.items[0].a;
+      for (var i = 0; i < 8; i++) {
+        var o = d.items[i + 1], b = BILLS[i];
+        if (!o) continue;
+        b.a = o.a == null ? "" : String(o.a);
+        b.n = typeof o.n === "string" ? o.n : "";
+        if (o.d && parseDate(o.d)) {
+          b.next = o.d;
+          if (b.every === "m" && !b.day) b.day = parseDate(o.d).getDate();
+        } else if (b.every === "f") { b.next = ""; }
+      }
+    }
+  }
+  function tidy() {
+    var today = startOfDay(new Date());
+    Object.keys(payOv).forEach(function (k) { var d = parseDate(k); if (!d || d < today) delete payOv[k]; });
+    BILLS.forEach(function (b) {
+      var o = parseDate(b.next);
+      if (b.every === "m" && o && diffDays(o, today) > 45) b.next = "";
+    });
+  }
+
+  function update() {
+    renderBudget();
     renderNow();
     save();
   }
 
-  [incomeEl, bankEl, cardEl, planEl].forEach(function (el) {
-    el.addEventListener("input", update);
-    el.addEventListener("focus", selectAll);
+  [incomeEl, bankEl, cardEl, spendEl, usualEl].forEach(function (e) {
+    e.addEventListener("input", update);
+    e.addEventListener("focus", selectAll);
   });
 
-  /* ---------- tabs ---------- */
+  /* ---- tabs ---- */
   function showTab(which) {
     curTab = which === "now" ? "now" : "budget";
     var isNow = curTab === "now";
@@ -533,14 +810,13 @@
     byId("tab-now").setAttribute("aria-selected", isNow ? "true" : "false");
     byId("panel-budget").hidden = isNow;
     byId("panel-now").hidden = !isNow;
-    if (isNow) renderNow();
     save();
     try { window.scrollTo(0, 0); } catch (e) {}
   }
   byId("tab-budget").addEventListener("click", function () { showTab("budget"); });
   byId("tab-now").addEventListener("click", function () { showTab("now"); });
 
-  /* ---------- reset the budget lines: needs a second tap within 4 seconds ---------- */
+  /* ---- reset budget lines: second tap within 4 seconds ---- */
   var resetBtn = byId("resetBtn");
   var armTimer = null;
   function disarm() { resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset budget to starting numbers"; armTimer = null; }
@@ -553,14 +829,16 @@
     }
     clearTimeout(armTimer);
     disarm();
-    applyBudgetDefaults();
+    budgetDefaults();
     update();
   });
 
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) renderNow(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { tidy(); update(); } });
 
-  buildList();
+  buildBills();
   load();
+  tidy();
+  syncBillInputs();
   update();
   showTab(curTab);
 })();
