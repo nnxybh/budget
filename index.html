@@ -694,10 +694,9 @@
     });
     var cardAmt = round2(num(cardEl));
     if (cardAmt > 0) {
-      billPlan({ every: "m", day: 21, next: "" }, today, H).dates.forEach(function (d, n) {
-        var when = n ? d : today;
-        slot(when).bills.push({ name: n ? "Card bill (guess)" : "Card owed, due " + shortFmt.format(d), a: cardAmt, d: when, c: "#f59e0b" });
-      });
+      /* Only what is owed on the card now. No guessing future card bills. */
+      var due = billPlan({ every: "m", day: 21, next: "" }, today, addDays(today, 40)).dates[0];
+      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b" });
     }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
     var bal = num(bankEl);
