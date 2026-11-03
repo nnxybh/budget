@@ -174,6 +174,20 @@
   .subtotal { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0 10px; border-top: 1px solid var(--line); font-weight: 600; font-variant-numeric: tabular-nums; }
   .subtotal small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
   .bl .bt { min-width: 0; }
+  #billList .bill { padding-block: 0; }
+  .bsum { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 10px; gap: 12px; align-items: center; min-height: 62px; cursor: pointer; list-style: none; }
+  .bsum::-webkit-details-marker { display: none; }
+  .bsum::after { content: ""; width: 7px; height: 7px; margin-top: -4px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.2s; }
+  .bill[open] > .bsum::after { transform: rotate(225deg); margin-top: 3px; }
+  .bsum .bt { display: flex; flex-direction: column; min-width: 0; font-size: 16px; font-weight: 500; }
+  .bsum small { font-size: 13px; font-weight: 400; color: var(--muted); }
+  .bsum small.warn { color: var(--warn); }
+  .bamt { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .bbody { padding: 2px 0 14px; }
+  .blab { font-size: 15px; color: var(--muted); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; padding: 4px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
+  .seg button { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
   .bl .bt small { display: block; margin-left: 0; }
   .cy { position: relative; margin: 10px 0 14px; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--field); overflow: hidden; }
   .cy::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cy, var(--accent)); }
@@ -327,7 +341,7 @@
     <details class="card fold">
       <summary><span class="ft">Bills</span><span class="fs" id="billSum"></span></summary>
       <div id="billList"></div>
-      <p class="hint">Paying late or early? Change the next date. After that it goes back to its usual day.</p>
+      <p class="hint">Tap a bill to change it. Paying late or early? Change the next date just for this time.</p>
     </details>
   </div>
 
@@ -541,12 +555,12 @@
     { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "", c: "#0ea5e9", src: "card" },
     { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05", c: "#ec4899", src: "card" },
     { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "", c: "#0ea5e9", src: "card" },
-    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
-    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
-    { id: "o3", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
-    { id: "o4", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
-    { id: "o5", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
-    { id: "o6", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" }
+    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" },
+    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" },
+    { id: "o3", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" },
+    { id: "o4", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" },
+    { id: "o5", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" },
+    { id: "o6", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "bank" }
   ];
   function billName(b) { if (b.other) { var n = (b.n || "").trim(); return n || "Other bill"; } return b.name; }
 
@@ -597,33 +611,40 @@
   function payDates(from, to) { return billPlan({ every: "f", next: PAY_ANCHOR }, from, to).dates; }
   function payAmt(d) { var k = iso(d); return payOv[k] != null ? numv(payOv[k]) : num(usualEl); }
 
-  /* ---- build the bills list ---- */
+  /* ---- bills list: one tidy line per bill, tap it to edit ---- */
   function buildBills() {
     var box = byId("billList");
     box.textContent = "";
     BILLS.forEach(function (b) {
-      var wrap = el("div", "bill");
+      var wrap = el("details", "bill");
+      var sum = el("summary", "bsum");
+      sum.appendChild(dot(b.c));
+      var bt = el("span", "bt");
+      b.sumName = el("span", "", "");
+      b.sumMeta = el("small", "", "");
+      bt.appendChild(b.sumName);
+      bt.appendChild(b.sumMeta);
+      sum.appendChild(bt);
+      b.sumAmt = el("span", "bamt", "");
+      sum.appendChild(b.sumAmt);
+      wrap.appendChild(sum);
+
+      var body = el("div", "bbody");
       var top = el("div", "g2");
-      var m = moneyField("ba-" + b.id, b.other ? "Amount" : null);
       if (b.other) {
         var ni = document.createElement("input");
-        ni.type = "text"; ni.className = "name-input"; ni.placeholder = "Other bill";
+        ni.type = "text"; ni.className = "name-input"; ni.placeholder = "Name it";
         ni.maxLength = 40; ni.autocomplete = "off";
         ni.setAttribute("aria-label", "Bill name");
         ni.addEventListener("input", function () { b.n = ni.value; update(); });
         b.nameEl = ni;
-        var nmw = el("div", "nm");
-        nmw.appendChild(dot(b.c));
-        nmw.appendChild(ni);
-        top.appendChild(nmw);
+        top.appendChild(ni);
       } else {
-        var lab = el("label", "bname");
+        var lab = el("label", "blab", "Amount");
         lab.htmlFor = "ba-" + b.id;
-        lab.appendChild(dot(b.c));
-        lab.appendChild(document.createTextNode(b.name));
-        lab.appendChild(el("span", "src " + b.src, b.src === "bank" ? "Bank" : "Card"));
         top.appendChild(lab);
       }
+      var m = moneyField("ba-" + b.id, b.other ? "Amount" : null);
       m.input.addEventListener("input", function () { b.a = m.input.value; update(); });
       b.amtEl = m.input;
       top.appendChild(m.wrap);
@@ -668,11 +689,26 @@
       df.appendChild(di);
       bot.appendChild(df);
 
+      var seg = el("div", "seg");
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", "Paid from");
+      b.segBtns = {};
+      ["bank", "card"].forEach(function (v) {
+        var btn = el("button", "", v === "bank" ? "From bank" : "On card");
+        btn.type = "button";
+        btn.addEventListener("click", function () { b.src = v; update(); });
+        b.segBtns[v] = btn;
+        seg.appendChild(btn);
+      });
+
       var note = el("div", "bnote");
       b.noteEl = note;
-      wrap.appendChild(top);
-      wrap.appendChild(bot);
-      wrap.appendChild(note);
+      body.appendChild(top);
+      body.appendChild(bot);
+      body.appendChild(seg);
+      body.appendChild(note);
+      wrap.appendChild(body);
+      b.wrapEl = wrap;
       box.appendChild(wrap);
     });
   }
@@ -915,6 +951,15 @@
   }
 
   function renderBills(today, far) {
+    /* Only one empty Other row shows at a time. */
+    var shownEmpty = false;
+    BILLS.forEach(function (b) {
+      if (!b.other) return;
+      var empty = numv(b.a) <= 0 && !(b.n || "").trim();
+      var show = !empty || b.wrapEl.open || !shownEmpty;
+      if (empty && show) shownEmpty = true;
+      b.wrapEl.hidden = !show;
+    });
     BILLS.forEach(function (b) {
       var plan = billPlan(b, today, far);
       var first = plan.dates[0] || null;
@@ -922,6 +967,13 @@
       var a = numv(b.a);
       if (document.activeElement !== b.selEl) b.selEl.value = b.every === "m" ? "m:" + (b.day || 0) : b.every;
       var undated = a > 0 && !hasDate(b);
+      b.segBtns.bank.setAttribute("aria-pressed", b.src === "bank" ? "true" : "false");
+      b.segBtns.card.setAttribute("aria-pressed", b.src === "card" ? "true" : "false");
+      b.sumName.textContent = b.other && !(b.n || "").trim() ? "Other bill" : billName(b);
+      var freq = b.every === "f" ? "Every 2 weeks" : b.every === "w" ? "Weekly" : b.day ? "Monthly, the " + ord(b.day) : "Monthly";
+      b.sumMeta.textContent = a <= 0 ? (b.other ? "Tap to add" : "Not in use") : undated ? "Needs a date" : (first ? "Next " + shortFmt.format(first) : freq) + ", " + (b.src === "bank" ? "from bank" : "on card");
+      b.sumMeta.className = undated ? "warn" : "";
+      b.sumAmt.textContent = a > 0 ? fmt.format(a) : "";
       b.dateWrap.classList.toggle("needs", undated);
       if (undated) { b.noteEl.textContent = "No date yet, so it's counted from today. Pick a date."; b.noteEl.className = "bnote warn"; }
       else if (plan.moved && first) { b.noteEl.textContent = "Moved from " + dayFmt.format(plan.moved) + " this time"; b.noteEl.className = "bnote acc"; }
@@ -974,7 +1026,7 @@
         payBudget: payBudgetEl.value,
         rows: rows.map(function (r) { return { k: r.key, n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
         bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid, bankAt: bankAt,
-        bills: BILLS.map(function (b) { return { id: b.id, n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
+        bills: BILLS.map(function (b) { return { id: b.id, src: b.src, n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
       }));
     } catch (e) {}
   }
@@ -985,7 +1037,7 @@
   function nowDefaults() {
     usualEl.value = DEFAULT_PAY;
     payOv = {};
-    BILLS.forEach(function (b) { if (!b.de) b.de = b.every; b.every = b.de; b.a = b.da; b.day = b.dday; b.next = b.dnext; b.n = ""; });
+    BILLS.forEach(function (b) { if (!b.de) b.de = b.every; b.every = b.de; if (!b.dsrc) b.dsrc = b.src; b.src = b.dsrc; b.a = b.da; b.day = b.dday; b.next = b.dnext; b.n = ""; });
   }
   function load() {
     var raw = null;
@@ -1033,6 +1085,7 @@
           b.a = s.a == null ? "" : String(s.a);
           b.day = +s.day || 0;
           if (s.every === "m" || s.every === "f" || s.every === "w") b.every = s.every;
+          if (s.src === "bank" || s.src === "card") b.src = s.src;
           b.next = typeof s.next === "string" ? s.next : "";
           b.n = typeof s.n === "string" ? s.n : "";
         });
