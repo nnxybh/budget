@@ -187,7 +187,7 @@
     <section class="card" aria-labelledby="up-h">
       <h2 id="up-h">Set aside before payday</h2>
       <div id="comingUp"></div>
-      <p class="hint">Only bills with a known date are included. Utilities, debt repayment, car insurance and rego are not in here yet.</p>
+      <p class="hint">Only bills with a known date are included. Debt repayment is not in here until it has a date. Car insurance and rego are yearly, so the monthly amounts in your budget cover them.</p>
     </section>
 
     <section class="card" aria-labelledby="fn-h">
@@ -210,7 +210,7 @@
   var APPLE_AMOUNT = 52.95;                 /* Apple subscription, charged to the card about the 5th */
 
   var items = [
-    ["Rent", 2600], ["Food", 400], ["Utilities", 250], ["Petrol", 200],
+    ["Rent", 2600], ["Food", 400], ["Utilities", null], ["Petrol", 200],
     ["Phone", 55], ["Internet", 70], ["Kids' swimming", 104], ["Haircuts", 100],
     ["Car insurance", 85], ["Rego", 75], ["Debt repayment", 500],
     ["Kids' costs", 300], ["Clothing", 100], ["Subscriptions", 225],
