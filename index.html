@@ -15,18 +15,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
 <style>
-  /* Layout: one phone-width column. Sticky summary on top, income, spending rows, cash and card, reset. */
+  /* Layout: one phone-width column. Two tabs: Budget (the plan) and Right now (payday, cash, what is due). */
   :root {
-    --bg: #f3f5f4;
-    --surface: #ffffff;
-    --field: #f3f6f5;
-    --ink: #17211d;
-    --muted: #5d6b65;
-    --line: #dde4e0;
-    --accent: #1f6b57;
-    --good: #1a7f4f;
-    --bad: #c63a32;
-    --bar-track: #dde4e0;
+    --bg: #f3f5f4; --surface: #ffffff; --field: #f3f6f5; --ink: #17211d; --muted: #5d6b65;
+    --line: #dde4e0; --accent: #1f6b57; --good: #1a7f4f; --bad: #c63a32; --bar-track: #dde4e0;
     --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
@@ -42,34 +34,28 @@
     --line: #2b3732; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --bar-track: #2b3732;
     color-scheme: dark;
   }
-
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--font-body);
-    font-size: 16px;
-    line-height: 1.4;
-    padding-block: 0 40px;
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    font-size: 16px; line-height: 1.4; padding-block: 0 40px;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
   }
-  body::before {
-    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
-    z-index: 10; background: var(--bg);
-  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
   .wrap { max-width: 560px; margin: 0 auto; }
   header { padding-top: max(18px, env(safe-area-inset-top, 0px)); }
   h1 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
   .sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .summary-bar {
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-    background: var(--bg); padding-block: 12px;
-  }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  .tabs button { min-height: 48px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--bg); }
+  .panel[hidden] { display: none; }
+
+  .summary-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 12px; }
   .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
   .stat .label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -93,11 +79,7 @@
   }
   .name-input::placeholder { color: var(--muted); opacity: 1; }
   .name-input:focus { outline: none; border-bottom: 1px solid var(--accent); }
-
-  .money {
-    flex: 0 0 132px; display: flex; align-items: center; height: 48px; padding: 0 12px;
-    background: var(--field); border: 1px solid var(--line); border-radius: 12px;
-  }
+  .money { flex: 0 0 132px; display: flex; align-items: center; height: 48px; padding: 0 12px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
   .money:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
   .money span { color: var(--muted); margin-right: 4px; font-size: 17px; }
   .money input {
@@ -111,17 +93,18 @@
   .income .money { flex-basis: 150px; }
   .income .money input { font-weight: 600; }
   .hint { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+  .status { margin: 4px 0 8px; font-size: 15px; font-weight: 500; }
 
-  .result { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); }
-  .result .label { font-size: 17px; font-weight: 600; }
-  .result .value { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; text-align: right; }
-  .status { margin: 0 0 4px; font-size: 15px; font-weight: 500; }
+  .evt { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 10px; border-top: 1px solid var(--line); }
+  .evt:first-of-type { border-top: 0; }
+  .evt .t { min-width: 0; overflow-wrap: anywhere; }
+  .evt .s { display: block; font-size: 13px; color: var(--muted); }
+  .evt .a { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .evt.total { font-weight: 600; }
+  .evt.total .a { font-family: var(--font-display); font-size: 20px; }
 
   .reset-wrap { margin-top: 18px; text-align: center; }
-  button.ghost {
-    min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line);
-    background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer;
-  }
+  button.ghost { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer; }
   button.ghost.armed { color: var(--bad); border-color: var(--bad); }
   .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
   noscript p { padding: 16px; color: var(--bad); }
@@ -134,71 +117,105 @@
 <div class="wrap">
   <header>
     <h1>Monthly Budget</h1>
-    <p class="sub">Change any number. Totals update as you type and your numbers are saved on this phone.</p>
+    <p class="sub">Plan your month, then check where you stand today. Numbers are saved on this phone.</p>
   </header>
 
-  <div class="summary-bar" role="status" aria-live="polite">
-    <div class="summary">
-      <div class="stat">
-        <div class="label">Total spending</div>
-        <div class="value" id="totalSpend">$0</div>
-      </div>
-      <div class="stat">
-        <div class="label">Savings / month</div>
-        <div class="value pos" id="savings">$0</div>
-      </div>
-    </div>
-    <div class="bar" id="bar"><div id="barFill"></div></div>
-    <div class="bar-label" id="barLabel"></div>
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button type="button" role="tab" id="tab-budget" aria-controls="panel-budget" aria-selected="true">Budget</button>
+    <button type="button" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false">Right now</button>
   </div>
 
-  <section class="card income" aria-labelledby="inc-h">
-    <h2 id="inc-h">Income</h2>
-    <div class="row">
-      <label for="income">Monthly income (net)</label>
-      <div class="money"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+  <div class="panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget">
+    <div class="summary-bar" role="status" aria-live="polite">
+      <div class="summary">
+        <div class="stat"><div class="label">Total spending</div><div class="value" id="totalSpend">$0</div></div>
+        <div class="stat"><div class="label">Savings / month</div><div class="value pos" id="savings">$0</div></div>
+      </div>
+      <div class="bar" id="bar"><div id="barFill"></div></div>
+      <div class="bar-label" id="barLabel"></div>
     </div>
-    <p class="hint">About $2,770 to $2,780 per fortnight.</p>
-  </section>
 
-  <section class="card" aria-labelledby="exp-h">
-    <h2 id="exp-h">Monthly spending</h2>
-    <div id="expenses"></div>
-  </section>
+    <section class="card income" aria-labelledby="inc-h">
+      <h2 id="inc-h">Income</h2>
+      <div class="row">
+        <label for="income">Monthly income (net)</label>
+        <div class="money"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+      </div>
+      <p class="hint">Pay is $2,770 every fortnight, which averages about $6,000 a month.</p>
+    </section>
 
-  <section class="card" aria-labelledby="cash-h">
-    <h2 id="cash-h">Cash and credit card</h2>
-    <div class="row">
-      <label for="bank">Bank balance today</label>
-      <div class="money"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
-    </div>
-    <div class="row">
-      <label for="cardOwed">Spent on card this statement</label>
-      <div class="money"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
-    </div>
-    <div class="result">
-      <div class="label">Left after paying the card</div>
-      <div class="value" id="freeCash">$0</div>
-    </div>
-    <p class="status" id="cardDates"></p>
-    <p class="hint">Card purchases are already counted in the spending lines above. This only shows what you pay in full on the 21st.</p>
-  </section>
+    <section class="card" aria-labelledby="exp-h">
+      <h2 id="exp-h">Monthly spending</h2>
+      <div id="expenses"></div>
+    </section>
 
-  <div class="reset-wrap">
-    <button type="button" class="ghost" id="resetBtn">Reset to starting budget</button>
+    <div class="reset-wrap"><button type="button" class="ghost" id="resetBtn">Reset budget to starting numbers</button></div>
   </div>
-  <p class="foot">Amounts are per month in AUD. Saved only in this browser.</p>
+
+  <div class="panel" id="panel-now" role="tabpanel" aria-labelledby="tab-now" hidden>
+    <div class="summary-bar" role="status" aria-live="polite">
+      <div class="summary">
+        <div class="stat"><div class="label">Safe to spend</div><div class="value" id="safeNow">$0</div></div>
+        <div class="stat"><div class="label">Per day to payday</div><div class="value" id="perDay">$0</div></div>
+      </div>
+      <div class="bar-label" id="safeNote"></div>
+    </div>
+
+    <section class="card" aria-labelledby="pay-h">
+      <h2 id="pay-h">Next payday</h2>
+      <p class="status" id="payBanner"></p>
+      <div class="row">
+        <label for="payAmt">Pay each fortnight</label>
+        <div class="money"><span>$</span><input id="payAmt" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+      </div>
+      <p class="hint" id="payMonth"></p>
+    </section>
+
+    <section class="card" aria-labelledby="cash-h">
+      <h2 id="cash-h">Your money today</h2>
+      <div class="row">
+        <label for="bank">Bank balance today</label>
+        <div class="money"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <label for="cardOwed">Spent on card this statement</label>
+        <div class="money"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+      </div>
+      <p class="status" id="cardDates"></p>
+    </section>
+
+    <section class="card" aria-labelledby="up-h">
+      <h2 id="up-h">Set aside before payday</h2>
+      <div id="comingUp"></div>
+      <p class="hint">Only bills with a known date are included. Utilities, debt repayment, car insurance and rego are not in here yet.</p>
+    </section>
+
+    <section class="card" aria-labelledby="fn-h">
+      <h2 id="fn-h">Where each fortnight goes</h2>
+      <div id="fortnightList"></div>
+      <p class="hint">Each budget line shared across 26 pays a year.</p>
+    </section>
+  </div>
+
+  <p class="foot">Amounts are in AUD. Saved only in this browser.</p>
 </div>
 
 <script>
 (function () {
-  var KEY = "budget-v2";
+  var KEY = "budget-v3";
   var DEFAULT_INCOME = 5995;
+  var DEFAULT_PAY = 2770;
+  var PAY_ANCHOR = new Date(2026, 10, 4);   /* Wed 4 Nov 2026: the night the pay lands, every 14 days */
+  var SWIM_ANCHOR = new Date(2026, 8, 24);  /* Thu 24 Sep 2026: swimming comes out every second Thursday */
+  var APPLE_AMOUNT = 52.95;                 /* Apple subscription, charged to the card about the 5th */
+
   var items = [
     ["Rent", 2600], ["Food", 400], ["Utilities", 250], ["Petrol", 200],
-    ["Phone", 80], ["Internet", 80], ["Kids' swimming", 100], ["Haircuts", 100],
+    ["Phone", 55], ["Internet", 70], ["Kids' swimming", 104], ["Haircuts", 100],
     ["Car insurance", 85], ["Rego", 75], ["Debt repayment", 500],
-    ["Kids' costs", 300], ["Clothing", 100], ["Subscriptions", 225]
+    ["Kids' costs", 300], ["Clothing", 100], ["Subscriptions", 225],
+    ["Card annual fee ($420 a year)", 35], ["Bars, venues and alcohol", 100],
+    ["Eating out", 100], ["Afterpay", 50], ["Miscellaneous costs", null]
   ];
   var BLANKS = 4;
 
@@ -206,8 +223,10 @@
   var incomeEl = document.getElementById("income");
   var bankEl = document.getElementById("bank");
   var cardEl = document.getElementById("cardOwed");
-  var rows = []; // { nameEl|null, amtEl }
+  var payEl = document.getElementById("payAmt");
+  var rows = [];
   var uid = 0;
+  var curTab = "budget";
 
   function selectAll(e) { var el = e.target; setTimeout(function () { try { el.select(); } catch (x) {} }, 0); }
 
@@ -225,7 +244,7 @@
       nameEl.maxLength = 40;
       nameEl.setAttribute("aria-label", "Expense name");
       nameEl.autocomplete = "off";
-      nameEl.addEventListener("input", save);
+      nameEl.addEventListener("input", update);
     } else {
       nameEl = document.createElement("label");
       nameEl.htmlFor = "amt-" + uid;
@@ -242,74 +261,200 @@
     row.appendChild(nameEl);
     row.appendChild(money);
     list.appendChild(row);
-    rows.push({ nameEl: editable ? nameEl : null, amtEl: input, defAmt: amount });
+    rows.push({ name: name, nameEl: editable ? nameEl : null, amtEl: input, defAmt: amount });
   }
 
   items.forEach(function (i) { addRow(i[0], i[1], false); });
   for (var b = 0; b < BLANKS; b++) addRow("", null, true);
 
   var fmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  function num(el) {
-    var v = parseFloat(el.value);
-    if (!isFinite(v) || v < 0) return 0;
-    return Math.min(v, 1e9);
-  }
+  var dateFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  var monthFmt = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" });
+  function num(el) { var v = parseFloat(el.value); if (!isFinite(v) || v < 0) return 0; return Math.min(v, 1e9); }
   function round2(n) { return Math.round(n * 100) / 100; }
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function diffDays(a, b) { return Math.round((b - a) / 86400000); }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
 
   /* ---------- saving and loading ---------- */
   function save() {
     try {
-      var data = {
-        income: incomeEl.value, bank: bankEl.value, card: cardEl.value,
+      localStorage.setItem(KEY, JSON.stringify({
+        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, pay: payEl.value, tab: curTab,
         rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; })
-      };
-      localStorage.setItem(KEY, JSON.stringify(data));
+      }));
     } catch (e) {}
   }
-
-  function applyDefaults() {
+  function applyBudgetDefaults() {
     incomeEl.value = DEFAULT_INCOME;
-    bankEl.value = "";
-    cardEl.value = "";
     rows.forEach(function (r) {
       r.amtEl.value = r.defAmt === null ? "" : r.defAmt;
       if (r.nameEl) r.nameEl.value = "";
     });
   }
-
+  function applyAllDefaults() { applyBudgetDefaults(); bankEl.value = ""; cardEl.value = ""; payEl.value = DEFAULT_PAY; }
   function load() {
     var raw = null;
     try { raw = localStorage.getItem(KEY); } catch (e) {}
-    if (!raw) { applyDefaults(); return; }
+    if (!raw) { applyAllDefaults(); return; }
     try {
       var d = JSON.parse(raw);
       if (!d || !Array.isArray(d.rows) || d.rows.length !== rows.length) throw new Error("shape");
       incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
       bankEl.value = d.bank == null ? "" : d.bank;
       cardEl.value = d.card == null ? "" : d.card;
+      payEl.value = d.pay == null || d.pay === "" ? DEFAULT_PAY : d.pay;
+      curTab = d.tab === "now" ? "now" : "budget";
       d.rows.forEach(function (s, i) {
         rows[i].amtEl.value = s && s.a != null ? s.a : "";
         if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
       });
-    } catch (e) { applyDefaults(); }
+    } catch (e) { applyAllDefaults(); }
   }
 
-  /* ---------- card dates: statement closes on the 20th, paid in full on the 21st ---------- */
-  var dateFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
-  function dayDiff(a, b) { return Math.round((b - a) / 86400000); }
+  /* ---------- dates: payday, card statement, bills ---------- */
+  function nextPayday(today) {
+    var d = diffDays(PAY_ANCHOR, today);
+    if (d <= 0) return PAY_ANCHOR;
+    return addDays(PAY_ANCHOR, Math.ceil(d / 14) * 14);
+  }
+  function paydaysInMonth(y, m) {
+    var c = 0;
+    for (var k = -60; k <= 300; k++) {
+      var p = addDays(PAY_ANCHOR, k * 14);
+      if (p.getFullYear() === y && p.getMonth() === m) c++;
+    }
+    return c;
+  }
   function cardMessage() {
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var today = startOfDay(new Date());
     var day = today.getDate();
     if (day === 21) return "Pay your card in full today.";
     var close = new Date(today.getFullYear(), today.getMonth() + (day > 21 ? 1 : 0), 20);
     var pay = new Date(close.getFullYear(), close.getMonth(), 21);
     if (day === 20) return "Statement closes today. Pay it in full tomorrow, " + dateFmt.format(pay) + ".";
-    var n = dayDiff(today, close);
-    return "Statement closes " + dateFmt.format(close) + " (" + n + (n === 1 ? " day" : " days") + "). Pay in full on " + dateFmt.format(pay) + ".";
+    var n = diffDays(today, close);
+    return "Statement closes " + dateFmt.format(close) + " (" + plural(n, "day") + "). Pay in full on " + dateFmt.format(pay) + ".";
+  }
+  function rowAmt(i) { return num(rows[i].amtEl); }
+
+  /* Bills with a known date. Rows: 0 Rent, 4 Phone, 5 Internet, 6 Swimming. */
+  var EVENTS = [
+    { name: "Rent", via: "from your bank", type: "m", day: 1, amt: function () { return rowAmt(0); } },
+    { name: "Apple subscription", via: "on the card", type: "m", day: 5, amt: function () { return APPLE_AMOUNT; } },
+    { name: "Phone (Optus)", via: "on the card", type: "m", day: 6, amt: function () { return rowAmt(4); } },
+    { name: "Internet (TPG)", via: "on the card", type: "m", day: 28, amt: function () { return rowAmt(5); } },
+    { name: "Swimming (Glen Eira)", via: "on the card", type: "f", amt: function () { return round2(rowAmt(6) * 12 / 26); } }
+  ];
+  function eventsBefore(today, pay) {
+    var out = [];
+    EVENTS.forEach(function (ev) {
+      if (ev.type === "m") {
+        for (var i = 0; i < 3; i++) {
+          var d = new Date(today.getFullYear(), today.getMonth() + i, ev.day);
+          if (d > today && d <= pay) out.push({ ev: ev, date: d });
+        }
+      } else {
+        var k = Math.floor(diffDays(SWIM_ANCHOR, today) / 14);
+        for (var j = k; j <= k + 2; j++) {
+          var d2 = addDays(SWIM_ANCHOR, j * 14);
+          if (d2 > today && d2 <= pay) out.push({ ev: ev, date: d2 });
+        }
+      }
+    });
+    out.sort(function (a, b) { return a.date - b.date; });
+    return out;
   }
 
-  /* ---------- totals ---------- */
+  function line(parent, title, sub, amount, cls) {
+    var el = document.createElement("div");
+    el.className = "evt" + (cls ? " " + cls : "");
+    var t = document.createElement("div");
+    t.className = "t";
+    t.appendChild(document.createTextNode(title));
+    if (sub) { var s = document.createElement("span"); s.className = "s"; s.textContent = sub; t.appendChild(s); }
+    var a = document.createElement("div");
+    a.className = "a";
+    a.textContent = amount;
+    el.appendChild(t);
+    el.appendChild(a);
+    parent.appendChild(el);
+  }
+
+  function renderNow() {
+    var today = startOfDay(new Date());
+    var pay = nextPayday(today);
+    var days = diffDays(today, pay);
+    var payAmt = num(payEl);
+
+    document.getElementById("payBanner").textContent = days === 0
+      ? fmt.format(payAmt) + " lands tonight, the night before the official payday."
+      : fmt.format(payAmt) + " lands " + dateFmt.format(pay) + " (in " + plural(days, "day") + "), the night before the official payday. Then every 14 days.";
+
+    var cnt = paydaysInMonth(today.getFullYear(), today.getMonth());
+    var msg = "Paydays this month: " + cnt + " (" + fmt.format(cnt * payAmt) + ").";
+    if (cnt !== 3) {
+      for (var i = 1; i <= 36; i++) {
+        var dm = new Date(today.getFullYear(), today.getMonth() + i, 1);
+        if (paydaysInMonth(dm.getFullYear(), dm.getMonth()) === 3) { msg += " Next month with 3 paydays: " + monthFmt.format(dm) + "."; break; }
+      }
+    }
+    document.getElementById("payMonth").textContent = msg;
+    document.getElementById("cardDates").textContent = cardMessage();
+
+    var box = document.getElementById("comingUp");
+    box.textContent = "";
+    var cardOwed = num(cardEl);
+    var setAside = cardOwed;
+    var close = new Date(today.getFullYear(), today.getMonth() + (today.getDate() > 21 ? 1 : 0), 20);
+    var payDay = new Date(close.getFullYear(), close.getMonth(), 21);
+    line(box, "Card bill so far", "Pay in full on " + dateFmt.format(payDay), fmt.format(cardOwed));
+    var evs = eventsBefore(today, pay);
+    evs.forEach(function (e) {
+      var a = round2(e.ev.amt());
+      setAside += a;
+      line(box, e.ev.name, dateFmt.format(e.date) + ", " + e.ev.via, fmt.format(a));
+    });
+    if (!evs.length) line(box, "No other dated bills before payday", "", "");
+    setAside = round2(setAside);
+    line(box, "Total set aside", "", fmt.format(setAside), "total");
+
+    var hasBank = bankEl.value !== "";
+    var safe = round2(num(bankEl) - setAside);
+    var s = document.getElementById("safeNow");
+    var pd = document.getElementById("perDay");
+    if (!hasBank) {
+      s.textContent = "$0"; s.className = "value";
+      pd.textContent = "$0"; pd.className = "value";
+      document.getElementById("safeNote").textContent = "Enter your bank balance to see what is safe to spend.";
+    } else {
+      s.textContent = fmt.format(safe);
+      s.className = "value " + (safe >= 0 ? "pos" : "neg");
+      var per = days > 0 ? round2(safe / days) : safe;
+      pd.textContent = days > 0 ? fmt.format(per) : "Payday";
+      pd.className = "value " + (safe >= 0 ? "" : "neg");
+      document.getElementById("safeNote").textContent = "Bank balance minus the card bill and bills due before payday.";
+    }
+
+    var fl = document.getElementById("fortnightList");
+    fl.textContent = "";
+    var tot = 0;
+    rows.forEach(function (r) {
+      var a = num(r.amtEl);
+      if (a <= 0) return;
+      var nm = r.nameEl ? (r.nameEl.value.trim() || "Other") : r.name;
+      var f = a * 12 / 26;
+      tot += f;
+      line(fl, nm, "", fmt.format(round2(f)));
+    });
+    tot = round2(tot);
+    line(fl, "Total spending", "", fmt.format(tot), "total");
+    var saved = round2(payAmt - tot);
+    line(fl, "Saved each fortnight", "", fmt.format(saved), "total");
+  }
+
+  /* ---------- totals on the Budget tab ---------- */
   function update() {
     var income = num(incomeEl);
     var total = 0;
@@ -329,24 +474,34 @@
       ? Math.round(pct) + "% of income spent" + (savings < 0 ? " (over budget)" : "")
       : "Enter your income to see savings";
 
-    var free = round2(num(bankEl) - num(cardEl));
-    var f = document.getElementById("freeCash");
-    f.textContent = fmt.format(free);
-    f.className = "value " + (bankEl.value === "" ? "" : (free >= 0 ? "pos" : "neg"));
-    document.getElementById("cardDates").textContent = cardMessage();
-
+    renderNow();
     save();
   }
 
-  [incomeEl, bankEl, cardEl].forEach(function (el) {
+  [incomeEl, bankEl, cardEl, payEl].forEach(function (el) {
     el.addEventListener("input", update);
     el.addEventListener("focus", selectAll);
   });
 
-  /* ---------- reset: needs a second tap within 4 seconds ---------- */
+  /* ---------- tabs ---------- */
+  function showTab(which) {
+    curTab = which === "now" ? "now" : "budget";
+    var isNow = curTab === "now";
+    document.getElementById("tab-budget").setAttribute("aria-selected", isNow ? "false" : "true");
+    document.getElementById("tab-now").setAttribute("aria-selected", isNow ? "true" : "false");
+    document.getElementById("panel-budget").hidden = isNow;
+    document.getElementById("panel-now").hidden = !isNow;
+    if (isNow) renderNow();
+    save();
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+  document.getElementById("tab-budget").addEventListener("click", function () { showTab("budget"); });
+  document.getElementById("tab-now").addEventListener("click", function () { showTab("now"); });
+
+  /* ---------- reset the budget lines: needs a second tap within 4 seconds ---------- */
   var resetBtn = document.getElementById("resetBtn");
   var armTimer = null;
-  function disarm() { resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset to starting budget"; armTimer = null; }
+  function disarm() { resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset budget to starting numbers"; armTimer = null; }
   resetBtn.addEventListener("click", function () {
     if (!armTimer) {
       resetBtn.classList.add("armed");
@@ -356,17 +511,15 @@
     }
     clearTimeout(armTimer);
     disarm();
-    applyDefaults();
+    applyBudgetDefaults();
     update();
   });
 
-  /* refresh the dates when the app is reopened */
-  document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) document.getElementById("cardDates").textContent = cardMessage();
-  });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) renderNow(); });
 
   load();
   update();
+  showTab(curTab);
 })();
 </script>
 </body>
