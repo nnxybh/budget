@@ -185,6 +185,7 @@
   .ln .amt.pos { color: var(--good); }
   .ln .amt.out { color: var(--bad); }
   .ln .amt.spend { color: var(--spend); }
+  .chip.amb { background: color-mix(in srgb, #f59e0b 16%, transparent); color: #b45309; }
   .chip.alt { background: color-mix(in srgb, #ec4899 14%, transparent); color: #db2777; }
   .ln.total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; font-weight: 600; }
   .ln.total .amt { font-family: var(--font-display); font-size: 22px; }
@@ -209,8 +210,8 @@
   </header>
 
   <div class="tabs" role="tablist" aria-label="Views">
-    <button type="button" role="tab" id="tab-budget" aria-controls="panel-budget" aria-selected="true">Budget</button>
-    <button type="button" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false">Right now</button>
+    <button type="button" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="true">Right now</button>
+    <button type="button" role="tab" id="tab-budget" aria-controls="panel-budget" aria-selected="false">Budget</button>
   </div>
 
   <!-- ===== Budget tab ===== -->
@@ -361,7 +362,7 @@
   var incomeEl = byId("income");
   var rows = [];
   var uid = 0;
-  var curTab = "budget";
+  var curTab = "now";
 
   function moneyField(id, label) {
     var f = el("div", "field");
@@ -663,7 +664,8 @@
     var eom = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     var pays = payDates(today, addDays(today, 70));
     var H = eom;
-    if (pays[2] && pays[2] > H) H = pays[2];
+    var ahead = pays.filter(function (d) { return d > today; });
+    if (ahead[2] && ahead[2] > H) H = ahead[2];
     var ev = {};
     function slot(d) { var k = iso(d); return ev[k] || (ev[k] = { bills: [], pay: 0, isPay: false }); }
     var missing = [];
@@ -758,6 +760,7 @@
     var segs = [];
     if (next[0]) segs.push({ from: today, to: next[0], chip: "Until next pay", cls: "chip", c: "var(--accent)" });
     if (next[1]) segs.push({ from: next[0], to: next[1], chip: "Next fortnight", cls: "chip alt", c: "#ec4899" });
+    if (next[2]) segs.push({ from: next[1], to: next[2], chip: "Fortnight after", cls: "chip amb", c: "#f59e0b" });
     segs.forEach(function (sg, k) {
       var a = f.idx[iso(sg.from)], b = f.idx[iso(sg.to)];
       if (a == null || b == null) return;
@@ -880,7 +883,7 @@
     var d;
     try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d !== "object") return;
-    curTab = d.tab === "now" ? "now" : "budget";
+    curTab = d.tab === "budget" ? "budget" : "now";
     if (Array.isArray(d.rows) && d.rows.length === rows.length) {
       incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
       d.rows.forEach(function (s, i) {
