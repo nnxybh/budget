@@ -480,7 +480,11 @@
     { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05", c: "#ec4899" },
     { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "", c: "#0ea5e9" },
     { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" }
+    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
+    { id: "o3", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
+    { id: "o4", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
+    { id: "o5", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
+    { id: "o6", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" }
   ];
   function billName(b) { if (b.other) { var n = (b.n || "").trim(); return n || "Other bill"; } return b.name; }
 
@@ -898,9 +902,9 @@
       if (d.payOv && typeof d.payOv === "object") {
         Object.keys(d.payOv).forEach(function (k) { if (parseDate(k)) payOv[k] = String(d.payOv[k]); });
       }
-      if (Array.isArray(d.bills) && d.bills.length === BILLS.length) {
+      if (Array.isArray(d.bills)) {
         d.bills.forEach(function (s, i) {
-          if (!s) return;
+          if (!s || !BILLS[i]) return;
           var b = BILLS[i];
           b.a = s.a == null ? "" : String(s.a);
           b.day = +s.day || 0;
