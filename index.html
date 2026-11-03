@@ -187,6 +187,14 @@
   .bl .nm { font-size: 15px; }
   .bl small { color: var(--muted); font-size: 13px; margin-left: 4px; }
   .bl .amt { font-variant-numeric: tabular-nums; color: var(--bad); white-space: nowrap; }
+  .bl { grid-template-columns: 30px minmax(0, 1fr) auto; }
+  .tick { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); cursor: pointer; padding: 0; position: relative; }
+  .tick::after { content: ""; position: absolute; left: 7px; top: 3px; width: 6px; height: 11px; border: solid transparent; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+  .tick[aria-pressed="true"] { background: var(--good); border-color: var(--good); }
+  .tick[aria-pressed="true"]::after { border-color: #fff; }
+  .bl.is-paid .nm { color: var(--muted); }
+  .bl.is-paid small { color: var(--good); font-weight: 600; }
+  .bl.is-paid .amt { color: var(--muted); text-decoration: line-through; }
   .chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); white-space: nowrap; }
   .cy-dates { font-size: 13px; color: var(--muted); text-align: right; }
   .ln { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding-block: 6px; font-size: 16px; }
@@ -480,6 +488,8 @@
   /* ================= Right now tab ================= */
   var bankEl = byId("bank"), cardEl = byId("cardOwed"), usualEl = byId("usualPay");
   var payOv = {};
+  var paid = {};
+  var openCy = {};
 
   /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
   var BILLS = [
@@ -690,13 +700,14 @@
       var a = round2(numv(b.a));
       if (a <= 0) return;
       if (!hasDate(b)) missing.push(billName(b));
-      billPlan(effBill(b, today), today, H).dates.forEach(function (d) { slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c }); });
+      billPlan(effBill(b, today), today, H).dates.forEach(function (d) { var key = b.id + "|" + iso(d); slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c, key: key, paid: !!paid[key] }); });
     });
     var cardAmt = round2(num(cardEl));
     if (cardAmt > 0) {
       /* Only what is owed on the card now. No guessing future card bills. */
       var due = billPlan({ every: "m", day: 21, next: "" }, today, addDays(today, 40)).dates[0];
-      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b" });
+      var ckey = "card|" + iso(due);
+      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b", key: ckey, paid: !!paid[ckey] });
     }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
     var bal = num(bankEl);
@@ -705,7 +716,7 @@
     for (var d = today, i = 0; d <= H; d = addDays(d, 1), i++) {
       var s = ev[iso(d)] || { bills: [], pay: 0, isPay: false };
       var billSum = 0;
-      s.bills.forEach(function (x) { billSum += x.a; });
+      s.bills.forEach(function (x) { if (!x.paid) billSum += x.a; });
       var spent = 0;
       var before = bal;
       bal = bal + s.pay - billSum;
@@ -791,7 +802,7 @@
       var inn = 0, out = 0, list = [];
       for (var i = a; i < b; i++) {
         inn += f.days[i].pay;
-        f.days[i].bills.forEach(function (x) { out += x.a; list.push(x); });
+        f.days[i].bills.forEach(function (x) { if (!x.paid) out += x.a; list.push(x); });
       }
       var end = f.days[b].before;
       var c = el("div", "cy");
@@ -813,17 +824,31 @@
       c.appendChild(flow);
       if (list.length) {
         var det = el("details");
-        det.appendChild(el("summary", "", "See " + list.length + (list.length === 1 ? " bill" : " bills")));
+        var openKey = sg.chip;
+        if (openCy[openKey]) det.open = true;
+        det.addEventListener("toggle", function () { openCy[openKey] = det.open; });
+        var np = list.filter(function (x) { return x.paid; }).length;
+        det.appendChild(el("summary", "", "See " + list.length + (list.length === 1 ? " bill" : " bills") + (np ? ", " + np + " paid" : "")));
         list.forEach(function (x) {
-          var row = el("div", "bl");
+          var row = el("div", "bl" + (x.paid ? " is-paid" : ""));
+          var tick = el("button", "tick");
+          tick.type = "button";
+          tick.setAttribute("aria-pressed", x.paid ? "true" : "false");
+          tick.setAttribute("aria-label", (x.paid ? "Mark not paid: " : "Mark paid: ") + x.name);
+          tick.addEventListener("click", function () {
+            if (paid[x.key]) delete paid[x.key]; else paid[x.key] = 1;
+            update();
+          });
+          row.appendChild(tick);
           var nm = el("div", "nm");
           nm.appendChild(dot(x.c || "#94a3b8"));
           nm.appendChild(document.createTextNode(x.name));
-          nm.appendChild(el("small", "", shortFmt.format(x.d)));
+          nm.appendChild(el("small", "", x.paid ? "Paid" : shortFmt.format(x.d)));
           row.appendChild(nm);
           row.appendChild(el("span", "amt", "-" + fmt.format(round2(x.a))));
           det.appendChild(row);
         });
+        det.appendChild(el("p", "hint", "Tick a bill once it has come out of your bank and Bank now shows it."));
         c.appendChild(det);
       }
       box.appendChild(c);
@@ -887,7 +912,7 @@
         v: 4, tab: curTab,
         income: incomeEl.value,
         rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
-        bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv,
+        bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid,
         bills: BILLS.map(function (b) { return { n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
       }));
     } catch (e) {}
@@ -926,6 +951,9 @@
       if (d.payOv && typeof d.payOv === "object") {
         Object.keys(d.payOv).forEach(function (k) { if (parseDate(k)) payOv[k] = String(d.payOv[k]); });
       }
+      if (d.paid && typeof d.paid === "object") {
+        Object.keys(d.paid).forEach(function (k) { if (d.paid[k]) paid[k] = 1; });
+      }
       if (Array.isArray(d.bills)) {
         d.bills.forEach(function (s, i) {
           if (!s || !BILLS[i]) return;
@@ -955,6 +983,7 @@
   function tidy() {
     var today = startOfDay(new Date());
     Object.keys(payOv).forEach(function (k) { var d = parseDate(k); if (!d || d < today) delete payOv[k]; });
+    Object.keys(paid).forEach(function (k) { var d = parseDate(k.split("|")[1]); if (!d || d < today) delete paid[k]; });
     BILLS.forEach(function (b) {
       var o = parseDate(b.next);
       if (b.every === "m" && o && diffDays(o, today) > 45) b.next = "";
