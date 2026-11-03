@@ -918,10 +918,10 @@
       c.style.setProperty("--cy", sg.c);
       var head = el("div", "cy-head");
       head.appendChild(el("span", sg.cls, sg.chip));
-      head.appendChild(el("span", "cy-dates", (k === 0 ? "Today" : shortFmt.format(sg.from)) + " to " + dayFmt.format(sg.to)));
+      head.appendChild(el("span", "cy-dates", (k === 0 ? "Today" : "Pay " + dayFmt.format(sg.from)) + " to " + dayFmt.format(addDays(sg.to, -1))));
       c.appendChild(head);
       var big = el("div", "cy-big");
-      big.appendChild(el("span", "k", "Left before pay"));
+      big.appendChild(el("span", "k", "Left on " + dayFmt.format(addDays(sg.to, -1))));
       var n = el("span", "num " + (end < 0 ? "amt bad" : "amt good"), fmt0.format(Math.round(end)));
       big.appendChild(n);
       c.appendChild(big);
