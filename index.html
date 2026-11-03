@@ -103,6 +103,9 @@
   .evt.total { font-weight: 600; }
   .evt.total .a { font-family: var(--font-display); font-size: 20px; }
 
+  .datein { flex: 0 0 140px; min-width: 0; height: 48px; padding: 0 10px; font: inherit; font-size: 17px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
+  .datein:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+  button.clr { min-height: 48px; min-width: 44px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 22px; cursor: pointer; }
   .reset-wrap { margin-top: 18px; text-align: center; }
   button.ghost { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer; }
   button.ghost.armed { color: var(--bad); border-color: var(--bad); }
@@ -187,7 +190,13 @@
     <section class="card" aria-labelledby="up-h">
       <h2 id="up-h">Set aside before payday</h2>
       <div id="comingUp"></div>
-      <p class="hint">Only bills with a known date are included. Debt repayment is not in here until it has a date. Car insurance and rego are yearly, so the monthly amounts in your budget cover them.</p>
+      <p class="hint">Bills show here once they have a date below. Car insurance and rego are yearly, so your monthly amounts cover them.</p>
+    </section>
+
+    <section class="card" aria-labelledby="bd-h">
+      <h2 id="bd-h">Bill dates</h2>
+      <div id="billDates"></div>
+      <p class="hint">Pick the next date each bill comes out. Bills repeat every month, and swimming every 2 weeks.</p>
     </section>
 
     <section class="card" aria-labelledby="fn-h">
@@ -281,7 +290,7 @@
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, pay: payEl.value, tab: curTab,
+        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, pay: payEl.value, tab: curTab, dates: dates,
         rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; })
       }));
     } catch (e) {}
@@ -306,6 +315,7 @@
       cardEl.value = d.card == null ? "" : d.card;
       payEl.value = d.pay == null || d.pay === "" ? DEFAULT_PAY : d.pay;
       curTab = d.tab === "now" ? "now" : "budget";
+      if (d.dates && typeof d.dates === "object") BILLS.forEach(function (b) { if (typeof d.dates[b.id] === "string") dates[b.id] = d.dates[b.id]; });
       d.rows.forEach(function (s, i) {
         rows[i].amtEl.value = s && s.a != null ? s.a : "";
         if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
@@ -339,32 +349,82 @@
   }
   function rowAmt(i) { return num(rows[i].amtEl); }
 
-  /* Bills with a known date. Rows: 0 Rent, 4 Phone, 5 Internet, 6 Swimming. */
-  var EVENTS = [
-    { name: "Rent", via: "from your bank", type: "m", day: 1, amt: function () { return rowAmt(0); } },
-    { name: "Apple subscription", via: "on the card", type: "m", day: 5, amt: function () { return APPLE_AMOUNT; } },
-    { name: "Phone (Optus)", via: "on the card", type: "m", day: 6, amt: function () { return rowAmt(4); } },
-    { name: "Internet (TPG)", via: "on the card", type: "m", day: 28, amt: function () { return rowAmt(5); } },
-    { name: "Swimming (Glen Eira)", via: "on the card", type: "f", amt: function () { return round2(rowAmt(6) * 12 / 26); } }
+  /* Bills. The date picker sets the next due date. Monthly bills repeat on that day, swimming every 14 days.
+     Budget rows: 0 Rent, 2 Utilities, 4 Phone, 5 Internet, 6 Swimming, 10 Debt repayment. */
+  var BILLS = [
+    { id: "rent", name: "Rent", via: "from your bank", type: "m", row: 0, def: "2026-12-01" },
+    { id: "debt", name: "Debt repayment", via: "from your bank", type: "m", row: 10, def: "" },
+    { id: "util", name: "Utilities", via: "from your bank", type: "m", row: 2, def: "" },
+    { id: "phone", name: "Phone", via: "on the card", type: "m", row: 4, def: "2026-11-06" },
+    { id: "net", name: "Internet", via: "on the card", type: "m", row: 5, def: "2026-11-28" },
+    { id: "swim", name: "Swimming", via: "on the card", type: "f", row: 6, def: "2026-11-05" },
+    { id: "apple", name: "Apple", via: "on the card", type: "m", fixed: APPLE_AMOUNT, def: "2026-11-05" }
   ];
+  var dates = {};
+  BILLS.forEach(function (b) { dates[b.id] = b.def; });
+
+  function parseDate(s) {
+    var p = String(s || "").split("-");
+    if (p.length !== 3) return null;
+    var y = +p[0], m = +p[1], d = +p[2];
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+  function billAmount(b) {
+    if (b.fixed != null) return b.fixed;
+    return b.type === "f" ? round2(rowAmt(b.row) * 12 / 26) : rowAmt(b.row);
+  }
   function eventsBefore(today, pay) {
     var out = [];
-    EVENTS.forEach(function (ev) {
-      if (ev.type === "m") {
+    BILLS.forEach(function (b) {
+      var base = parseDate(dates[b.id]);
+      if (!base) return;
+      if (b.type === "m") {
         for (var i = 0; i < 3; i++) {
-          var d = new Date(today.getFullYear(), today.getMonth() + i, ev.day);
-          if (d > today && d <= pay) out.push({ ev: ev, date: d });
+          var last = new Date(today.getFullYear(), today.getMonth() + i + 1, 0).getDate();
+          var d = new Date(today.getFullYear(), today.getMonth() + i, Math.min(base.getDate(), last));
+          if (d > today && d <= pay && d >= base) out.push({ b: b, date: d });
         }
       } else {
-        var k = Math.floor(diffDays(SWIM_ANCHOR, today) / 14);
+        var k = Math.floor(diffDays(base, today) / 14);
         for (var j = k; j <= k + 2; j++) {
-          var d2 = addDays(SWIM_ANCHOR, j * 14);
-          if (d2 > today && d2 <= pay) out.push({ ev: ev, date: d2 });
+          var d2 = addDays(base, j * 14);
+          if (d2 > today && d2 <= pay && d2 >= base) out.push({ b: b, date: d2 });
         }
       }
     });
-    out.sort(function (a, b) { return a.date - b.date; });
+    out.sort(function (a, c) { return a.date - c.date; });
     return out;
+  }
+  function buildBills() {
+    var box = document.getElementById("billDates");
+    box.textContent = "";
+    BILLS.forEach(function (b) {
+      var row = document.createElement("div");
+      row.className = "row";
+      var lab = document.createElement("label");
+      lab.htmlFor = "bd-" + b.id;
+      lab.textContent = b.name;
+      var inp = document.createElement("input");
+      inp.type = "date";
+      inp.id = "bd-" + b.id;
+      inp.className = "datein";
+      inp.value = dates[b.id] || "";
+      var clr = document.createElement("button");
+      clr.type = "button";
+      clr.className = "clr";
+      clr.textContent = "×";
+      clr.setAttribute("aria-label", "Clear the " + b.name + " date");
+      clr.hidden = !inp.value;
+      function changed() { dates[b.id] = inp.value; clr.hidden = !inp.value; update(); }
+      inp.addEventListener("input", changed);
+      inp.addEventListener("change", changed);
+      clr.addEventListener("click", function () { inp.value = ""; changed(); });
+      row.appendChild(lab);
+      row.appendChild(inp);
+      row.appendChild(clr);
+      box.appendChild(row);
+    });
   }
 
   function line(parent, title, sub, amount, cls) {
@@ -411,12 +471,15 @@
     var payDay = new Date(close.getFullYear(), close.getMonth(), 21);
     line(box, "Card bill so far", "Pay in full on " + dateFmt.format(payDay), fmt.format(cardOwed));
     var evs = eventsBefore(today, pay);
+    var shown = 0;
     evs.forEach(function (e) {
-      var a = round2(e.ev.amt());
+      var a = round2(billAmount(e.b));
+      if (a <= 0) return;
       setAside += a;
-      line(box, e.ev.name, dateFmt.format(e.date) + ", " + e.ev.via, fmt.format(a));
+      shown++;
+      line(box, e.b.name, dateFmt.format(e.date) + ", " + e.b.via, fmt.format(a));
     });
-    if (!evs.length) line(box, "No other dated bills before payday", "", "");
+    if (!shown) line(box, "No dated bills before payday", "", "");
     setAside = round2(setAside);
     line(box, "Total set aside", "", fmt.format(setAside), "total");
 
@@ -518,6 +581,7 @@
   document.addEventListener("visibilitychange", function () { if (!document.hidden) renderNow(); });
 
   load();
+  buildBills();
   update();
   showTab(curTab);
 })();
