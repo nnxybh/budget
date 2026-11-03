@@ -9,33 +9,33 @@
 <meta name="apple-mobile-web-app-title" content="Budget">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="application-name" content="Budget">
-<meta name="theme-color" content="#f2f4f1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1412" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f5fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0e16" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
 <style>
   /* One phone-width column. Every input sits in the same right-hand column (--in-w) so all boxes line up. */
   :root {
-    --bg: #f2f4f1; --surface: #ffffff; --field: #f4f7f5; --ink: #15201b; --muted: #5e6c66;
-    --line: #e1e7e3; --accent: #1f6b57; --good: #1a7f4f; --bad: #c63a32; --warn: #9a5b00;
-    --hero1: #1f6b57; --hero2: #0e3a30; --hero-bad: #ffb8b0;
+    --bg: #f4f5fb; --surface: #ffffff; --field: #f5f6fb; --ink: #161827; --muted: #626779;
+    --line: #e5e7f0; --accent: #4f46e5; --on-accent: #ffffff; --good: #059669; --bad: #e11d48; --warn: #b45309; --spend: #ea580c;
+    --hero1: #4338ca; --hero2: #7e22ce; --hero-glow: rgba(244, 114, 182, 0.45); --hero-bad: #fecdd3;
     --in-w: 164px;
     --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0f1412; --surface: #18201c; --field: #111815; --ink: #e8eeea; --muted: #98a8a0;
-      --line: #27322d; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --warn: #f0b35a;
-      --hero1: #1c5a4a; --hero2: #0a221c;
+      --bg: #0c0e16; --surface: #151826; --field: #10121c; --ink: #eceef6; --muted: #9a9fb3;
+      --line: #252a3b; --accent: #818cf8; --on-accent: #0c0e16; --good: #34d399; --bad: #fb7185; --warn: #fbbf24; --spend: #fb923c;
+      --hero1: #312e81; --hero2: #581c87; --hero-glow: rgba(236, 72, 153, 0.35);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0f1412; --surface: #18201c; --field: #111815; --ink: #e8eeea; --muted: #98a8a0;
-    --line: #27322d; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --warn: #f0b35a;
-    --hero1: #1c5a4a; --hero2: #0a221c;
+    --bg: #0c0e16; --surface: #151826; --field: #10121c; --ink: #eceef6; --muted: #9a9fb3;
+    --line: #252a3b; --accent: #818cf8; --on-accent: #0c0e16; --good: #34d399; --bad: #fb7185; --warn: #fbbf24; --spend: #fb923c;
+    --hero1: #312e81; --hero2: #581c87; --hero-glow: rgba(236, 72, 153, 0.35);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -57,15 +57,15 @@
   /* Tabs */
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 16px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
   .tabs button { min-height: 46px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--bg); }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 16px -8px var(--accent); }
   .panel[hidden] { display: none; }
 
   /* Hero cards */
   .sticky { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-top: 14px; padding-bottom: 2px; }
   .hero {
     margin-top: 14px; color: #fff; border-radius: 22px; padding: 16px;
-    background: radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(155deg, var(--hero1), var(--hero2));
-    box-shadow: 0 14px 30px -18px rgba(10, 50, 40, 0.7);
+    background: radial-gradient(90% 80% at 100% 0%, var(--hero-glow), transparent 65%), linear-gradient(150deg, var(--hero1), var(--hero2));
+    box-shadow: 0 16px 34px -18px rgba(67, 56, 202, 0.75);
   }
   .sticky .hero { margin-top: 0; }
   .hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -73,6 +73,8 @@
   .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
   .tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
   .tile { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 10px 11px 11px; min-width: 0; }
+  .tile[style] { border-top: 3px solid var(--tc); }
+  .tile .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.05em; }
   .tile .v { font-family: var(--font-display); font-weight: 700; font-size: clamp(17px, 5.2vw, 24px); line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tiles.two .tile .v { font-size: clamp(22px, 7vw, 30px); }
   .tile .d { font-size: 12px; opacity: 0.75; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -81,6 +83,17 @@
   .hbar > div { height: 100%; width: 0; background: #fff; border-radius: 99px; transition: width 0.25s ease; }
   .hbar.over > div { background: var(--hero-bad); }
   .hbar-label { margin-top: 6px; font-size: 13px; opacity: 0.8; }
+  .tdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .stack { display: flex; height: 10px; border-radius: 99px; background: rgba(255,255,255,0.18); overflow: hidden; margin-top: 14px; gap: 2px; }
+  .stack > div { height: 100%; min-width: 3px; transition: width 0.25s ease; }
+  .nm { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+  .dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: var(--c, #94a3b8); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, #94a3b8) 18%, transparent); }
+  .grp { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding-block: 10px; border-top: 1px solid var(--line); }
+  #groups .grp:first-child { border-top: 0; }
+  .grp .gamt { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  .grp .gamt small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .gtrack { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--c) 14%, transparent); overflow: hidden; }
+  .gtrack > div { height: 100%; border-radius: 99px; background: var(--c); }
   .hero-warn { margin-top: 10px; font-size: 13px; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 10px; }
   .hero-warn:empty { display: none; }
 
@@ -129,7 +142,7 @@
   #billList .bill:first-child { border-top: 0; }
   .g2 { display: grid; grid-template-columns: minmax(0, 1fr) var(--in-w); align-items: center; gap: 12px; }
   .g2 + .g2 { margin-top: 8px; }
-  .bname { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
+  .bname { font-size: 17px; font-weight: 500; overflow-wrap: anywhere; display: flex; align-items: center; gap: 10px; }
   .pillwrap { position: relative; min-width: 0; }
   .pill {
     width: 100%; height: 40px; padding: 0 30px 0 14px; border-radius: 999px; border: 1px solid var(--line);
@@ -153,6 +166,9 @@
   .ln small { display: block; font-size: 13px; color: var(--muted); }
   .ln .amt { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ln .amt.pos { color: var(--good); }
+  .ln .amt.out { color: var(--bad); }
+  .ln .amt.spend { color: var(--spend); }
+  .chip.alt { background: color-mix(in srgb, #ec4899 14%, transparent); color: #db2777; }
   .ln.total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; font-weight: 600; }
   .ln.total .amt { font-family: var(--font-display); font-size: 22px; }
   .amt.good { color: var(--good); }
@@ -185,13 +201,18 @@
     <div class="sticky" role="status" aria-live="polite">
       <section class="hero">
         <div class="tiles two">
-          <div class="tile"><div class="k">Spending</div><div class="v" id="totalSpend">$0</div><div class="d">Each month</div></div>
-          <div class="tile"><div class="k">Savings</div><div class="v" id="savings">$0</div><div class="d">Each month</div></div>
+          <div class="tile"><div class="k"><span class="tdot" style="background:#fb923c"></span>Spending</div><div class="v" id="totalSpend">$0</div><div class="d">Each month</div></div>
+          <div class="tile"><div class="k"><span class="tdot" style="background:#34d399"></span>Savings</div><div class="v" id="savings">$0</div><div class="d">Each month</div></div>
         </div>
-        <div class="hbar" id="bar"><div id="barFill"></div></div>
+        <div class="stack" id="stack"></div>
         <div class="hbar-label" id="barLabel"></div>
       </section>
     </div>
+
+    <section class="card" aria-labelledby="grp-h">
+      <h2 id="grp-h">Where it goes</h2>
+      <div id="groups"></div>
+    </section>
 
     <section class="card" aria-labelledby="inc-h">
       <h2 id="inc-h">Income</h2>
@@ -215,9 +236,9 @@
       <div class="hero-top"><span class="k">Where your money is heading</span><span class="k" id="heroRange"></span></div>
       <div class="chart"><svg id="chart" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"></svg><div class="chart-labels" id="chartLabels"></div></div>
       <div class="tiles">
-        <div class="tile"><div class="k">Today</div><div class="v" id="tToday">$0</div><div class="d">After card</div></div>
-        <div class="tile"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
-        <div class="tile"><div class="k" id="tEomK">End of month</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
+        <div class="tile" style="--tc:#38bdf8"><div class="k">Today</div><div class="v" id="tToday">$0</div><div class="d">After card</div></div>
+        <div class="tile" style="--tc:#fbbf24"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
+        <div class="tile" style="--tc:#34d399"><div class="k" id="tEomK">Month end</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
       </div>
       <div class="hero-warn" id="heroWarn"></div>
     </section>
@@ -302,13 +323,24 @@
   function onDay(y, m, day) { var last = new Date(y, m + 1, 0).getDate(); return new Date(y, m, Math.min(day, last)); }
 
   /* ================= Budget tab ================= */
+  var GROUPS = {
+    housing: { name: "Housing", c: "#8b5cf6" },
+    food: { name: "Food and going out", c: "#f97316" },
+    bills: { name: "Bills and subscriptions", c: "#0ea5e9" },
+    car: { name: "Car and transport", c: "#eab308" },
+    kids: { name: "Kids", c: "#ec4899" },
+    debt: { name: "Debt and card", c: "#ef4444" },
+    personal: { name: "Personal", c: "#14b8a6" },
+    other: { name: "Other", c: "#94a3b8" }
+  };
+  var GROUP_ORDER = ["housing", "food", "bills", "car", "kids", "debt", "personal", "other"];
   var items = [
-    ["Rent", 2600], ["Food", 400], ["Utilities", null], ["Petrol", 200],
-    ["Phone", 55], ["Internet", 70], ["Kids' swimming", 104], ["Haircuts", 100],
-    ["Car insurance", 85], ["Rego", 75], ["Debt repayment", 500],
-    ["Kids' costs", 300], ["Clothing", 100], ["Subscriptions", 225],
-    ["Card annual fee ($420 a year)", 35], ["Bars, venues and alcohol", 100],
-    ["Eating out", 100], ["Afterpay", 50], ["Miscellaneous costs", null]
+    ["Rent", 2600, "housing"], ["Food", 400, "food"], ["Utilities", null, "bills"], ["Petrol", 200, "car"],
+    ["Phone", 55, "bills"], ["Internet", 70, "bills"], ["Kids' swimming", 104, "kids"], ["Haircuts", 100, "personal"],
+    ["Car insurance", 85, "car"], ["Rego", 75, "car"], ["Debt repayment", 500, "debt"],
+    ["Kids' costs", 300, "kids"], ["Clothing", 100, "personal"], ["Subscriptions", 225, "bills"],
+    ["Card annual fee ($420 a year)", 35, "debt"], ["Bars, venues and alcohol", 100, "food"],
+    ["Eating out", 100, "food"], ["Afterpay", 50, "debt"], ["Miscellaneous costs", null, "personal"]
   ];
   var BLANKS = 4;
   var list = byId("expenses");
@@ -330,30 +362,37 @@
     return { wrap: f, input: i };
   }
 
-  function addRow(name, amount, editable) {
+  function dot(c) { var d = el("span", "dot"); d.style.setProperty("--c", c); return d; }
+  function addRow(name, amount, editable, group) {
     uid++;
     var row = el("div", "row");
-    var nameEl;
+    var nameEl, left;
     if (editable) {
       nameEl = document.createElement("input");
       nameEl.type = "text"; nameEl.className = "name-input"; nameEl.placeholder = "Other";
       nameEl.maxLength = 40; nameEl.autocomplete = "off";
       nameEl.setAttribute("aria-label", "Expense name");
       nameEl.addEventListener("input", update);
+      left = el("div", "nm");
+      left.appendChild(dot(GROUPS[group].c));
+      left.appendChild(nameEl);
     } else {
-      nameEl = el("label", "", name);
+      nameEl = el("label", "nm");
       nameEl.htmlFor = "amt-" + uid;
+      nameEl.appendChild(dot(GROUPS[group].c));
+      nameEl.appendChild(document.createTextNode(name));
+      left = nameEl;
     }
     var m = moneyField("amt-" + uid, editable ? "Amount for other expense" : null);
     if (amount !== null) m.input.value = amount;
     m.input.addEventListener("input", update);
-    row.appendChild(nameEl);
+    row.appendChild(left);
     row.appendChild(m.wrap);
     list.appendChild(row);
-    rows.push({ nameEl: editable ? nameEl : null, amtEl: m.input, defAmt: amount });
+    rows.push({ nameEl: editable ? nameEl : null, amtEl: m.input, defAmt: amount, g: group });
   }
-  items.forEach(function (i) { addRow(i[0], i[1], false); });
-  for (var b0 = 0; b0 < BLANKS; b0++) addRow("", null, true);
+  items.forEach(function (i) { addRow(i[0], i[1], false, i[2]); });
+  for (var b0 = 0; b0 < BLANKS; b0++) addRow("", null, true, "other");
 
   function renderBudget() {
     var income = num(incomeEl);
@@ -366,8 +405,48 @@
     s.textContent = fmt0.format(savings);
     s.className = "v" + (savings < 0 ? " neg" : "");
     var pct = income > 0 ? (total / income) * 100 : (total > 0 ? 100 : 0);
-    byId("barFill").style.width = Math.min(100, pct) + "%";
-    byId("bar").className = "hbar" + (savings < 0 ? " over" : "");
+    var sums = {};
+    rows.forEach(function (r) { sums[r.g] = (sums[r.g] || 0) + num(r.amtEl); });
+    var base = Math.max(income, total) || 1;
+    var stack = byId("stack");
+    stack.textContent = "";
+    var gbox = byId("groups");
+    gbox.textContent = "";
+    var order = GROUP_ORDER.filter(function (g) { return sums[g] > 0; }).sort(function (a, b) { return sums[b] - sums[a]; });
+    order.forEach(function (g) {
+      var seg = el("div");
+      seg.style.width = (sums[g] / base) * 100 + "%";
+      seg.style.background = GROUPS[g].c;
+      stack.appendChild(seg);
+      var row = el("div", "grp");
+      row.style.setProperty("--c", GROUPS[g].c);
+      var nm = el("div", "nm");
+      nm.appendChild(dot(GROUPS[g].c));
+      nm.appendChild(document.createTextNode(GROUPS[g].name));
+      var amt = el("div", "gamt", fmt0.format(round2(sums[g])));
+      amt.appendChild(el("small", "", (income > 0 ? Math.round((sums[g] / income) * 100) : 0) + "% of income"));
+      var tr = el("div", "gtrack");
+      var fill = el("div");
+      fill.style.width = (sums[g] / base) * 100 + "%";
+      tr.appendChild(fill);
+      row.appendChild(nm); row.appendChild(amt); row.appendChild(tr);
+      gbox.appendChild(row);
+    });
+    if (savings > 0) {
+      var srow = el("div", "grp");
+      srow.style.setProperty("--c", "#10b981");
+      var snm = el("div", "nm");
+      snm.appendChild(dot("#10b981"));
+      snm.appendChild(document.createTextNode("Savings"));
+      var samt = el("div", "gamt", fmt0.format(savings));
+      samt.appendChild(el("small", "", Math.round((savings / income) * 100) + "% of income"));
+      var str = el("div", "gtrack");
+      var sfill = el("div");
+      sfill.style.width = (savings / base) * 100 + "%";
+      str.appendChild(sfill);
+      srow.appendChild(snm); srow.appendChild(samt); srow.appendChild(str);
+      gbox.appendChild(srow);
+    }
     byId("barLabel").textContent = income > 0
       ? Math.round(pct) + "% of your " + fmt0.format(income) + " income" + (savings < 0 ? " (over budget)" : "")
       : "Enter your income to see savings";
@@ -379,14 +458,14 @@
 
   /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
   var BILLS = [
-    { id: "rent", name: "Rent", every: "m", da: "2600", dday: 1, dnext: "2026-11-04" },
-    { id: "debt", name: "Debt repayment", every: "m", da: "500", dday: 0, dnext: "" },
-    { id: "phone", name: "Phone", every: "m", da: "55", dday: 6, dnext: "" },
-    { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "" },
-    { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05" },
-    { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "" },
-    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true },
-    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true }
+    { id: "rent", name: "Rent", every: "m", da: "2600", dday: 1, dnext: "2026-11-04", c: "#8b5cf6" },
+    { id: "debt", name: "Debt repayment", every: "m", da: "500", dday: 0, dnext: "", c: "#ef4444" },
+    { id: "phone", name: "Phone", every: "m", da: "55", dday: 6, dnext: "", c: "#0ea5e9" },
+    { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "", c: "#0ea5e9" },
+    { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05", c: "#ec4899" },
+    { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "", c: "#0ea5e9" },
+    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
+    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" }
   ];
   function billName(b) { if (b.other) { var n = (b.n || "").trim(); return n || "Other bill"; } return b.name; }
 
@@ -445,10 +524,15 @@
         ni.setAttribute("aria-label", "Bill name");
         ni.addEventListener("input", function () { b.n = ni.value; update(); });
         b.nameEl = ni;
-        top.appendChild(ni);
+        var nmw = el("div", "nm");
+        nmw.appendChild(dot(b.c));
+        nmw.appendChild(ni);
+        top.appendChild(nmw);
       } else {
-        var lab = el("label", "bname", b.name);
+        var lab = el("label", "bname");
         lab.htmlFor = "ba-" + b.id;
+        lab.appendChild(dot(b.c));
+        lab.appendChild(document.createTextNode(b.name));
         top.appendChild(lab);
       }
       m.input.addEventListener("input", function () { b.a = m.input.value; update(); });
@@ -604,7 +688,7 @@
     var area = line + " L" + W + " " + HH + " L0 " + HH + " Z";
     var s = '<defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>';
     f.days.forEach(function (x, i) {
-      if (x.isPay) s += '<line x1="' + X(i).toFixed(1) + '" y1="0" x2="' + X(i).toFixed(1) + '" y2="' + HH + '" stroke="#fff" stroke-opacity="0.16" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+      if (x.isPay) s += '<line x1="' + X(i).toFixed(1) + '" y1="0" x2="' + X(i).toFixed(1) + '" y2="' + HH + '" stroke="#6ee7b7" stroke-opacity="0.5" stroke-width="1" vector-effect="non-scaling-stroke"/>';
     });
     if (lo < 0 && hi > 0) s += '<line x1="0" y1="' + Y(0).toFixed(1) + '" x2="' + W + '" y2="' + Y(0).toFixed(1) + '" stroke="#ffb8b0" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
     var ei = f.idx[iso(f.eom)];
@@ -654,13 +738,13 @@
       var end = f.days[b].before;
       var c = el("div", "cycle");
       var head = el("div", "cy-head");
-      head.appendChild(el("span", "chip", names[k]));
+      head.appendChild(el("span", k ? "chip alt" : "chip", names[k]));
       head.appendChild(el("span", "cy-dates", "Pay " + dayFmt.format(p[k]) + " to " + dayFmt.format(p[k + 1])));
       c.appendChild(head);
       ledgerLine(c, "Before pay lands", null, fmt.format(round2(startBal)));
       ledgerLine(c, "Pay", null, signed(round2(pay))).lastChild.className = "amt pos";
-      ledgerLine(c, "Bills", bills.length ? bills.map(function (x) { return x.name + " " + shortFmt.format(x.d); }).join(", ") : "None", minus(round2(billSum)));
-      ledgerLine(c, "Day-to-day", spent > 0 ? "14 days" : "Not set yet", minus(round2(spent)));
+      ledgerLine(c, "Bills", bills.length ? bills.map(function (x) { return x.name + " " + shortFmt.format(x.d); }).join(", ") : "None", minus(round2(billSum))).lastChild.className = "amt out";
+      ledgerLine(c, "Day-to-day", spent > 0 ? "14 days" : "Not set yet", minus(round2(spent))).lastChild.className = "amt spend";
       var t = ledgerLine(c, "Left before next pay", null, fmt.format(round2(end)), "total");
       t.lastChild.className = "amt " + (end < 0 ? "bad" : "good");
       box.appendChild(c);
@@ -697,7 +781,7 @@
       setVal("tPay", f.days[f.idx[iso(p0)]].before);
       byId("tPayD").textContent = diffDays(today, p0) === 0 ? "Tonight" : dayFmt.format(p0);
     }
-    byId("tEomK").textContent = "End of " + monShort.format(f.eom);
+    byId("tEomK").textContent = "Month end";
     setVal("tEom", f.days[f.idx[iso(f.eom)]].after);
     byId("tEomD").textContent = dayFmt.format(f.eom);
     var warn = [];
