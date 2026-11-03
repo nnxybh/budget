@@ -236,7 +236,7 @@
       <div class="hero-top"><span class="k">Where your money is heading</span><span class="k" id="heroRange"></span></div>
       <div class="chart"><svg id="chart" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"></svg><div class="chart-labels" id="chartLabels"></div></div>
       <div class="tiles">
-        <div class="tile" style="--tc:#38bdf8"><div class="k">Today</div><div class="v" id="tToday">$0</div><div class="d">After card</div></div>
+        <div class="tile" style="--tc:#38bdf8"><div class="k">Bank now</div><div class="v" id="tToday">$0</div><div class="d">Today</div></div>
         <div class="tile" style="--tc:#fbbf24"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
         <div class="tile" style="--tc:#34d399"><div class="k" id="tEomK">Month end</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
       </div>
@@ -250,17 +250,14 @@
         <div class="field"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
       <div class="row">
-        <label for="cardOwed">Card owed so far<span class="s" id="cardWhen"></span></label>
+        <label for="cardOwed">Card bill<span class="s" id="cardWhen"></span></label>
         <div class="field"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
-      <div class="row">
-        <label for="spend">Day-to-day spending<span class="s">Each fortnight: food, petrol, going out</span></label>
-        <div class="field"><span>$</span><input id="spend" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
-      </div>
+      <p class="hint">Your card is your day-to-day spending. Put in what you owe on it now, and top it up as you spend.</p>
     </section>
 
     <section class="card" aria-labelledby="cy-h">
-      <h2 id="cy-h">Each fortnight</h2>
+      <h2 id="cy-h">Pay by pay</h2>
       <div id="cycles"></div>
     </section>
 
@@ -453,7 +450,7 @@
   }
 
   /* ================= Right now tab ================= */
-  var bankEl = byId("bank"), cardEl = byId("cardOwed"), spendEl = byId("spend"), usualEl = byId("usualPay");
+  var bankEl = byId("bank"), cardEl = byId("cardOwed"), usualEl = byId("usualPay");
   var payOv = {};
 
   /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
@@ -647,17 +644,21 @@
       if (!plan.dates.length && !(b.every === "m" && (b.day || b.next)) && !(b.every === "f" && b.next)) missing.push(billName(b));
       plan.dates.forEach(function (d) { slot(d).bills.push({ name: billName(b), a: a, d: d }); });
     });
+    var cardAmt = round2(num(cardEl));
+    if (cardAmt > 0) {
+      billPlan({ every: "m", day: 21, next: "" }, today, H).dates.forEach(function (d, n) {
+        slot(d).bills.push({ name: n ? "Card bill (guess)" : "Card bill", a: cardAmt, d: d });
+      });
+    }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
-    var rate = num(spendEl) / 14;
-    var bal = num(bankEl) - num(cardEl);
+    var bal = num(bankEl);
     var start = bal;
     var days = [], idx = {};
     for (var d = today, i = 0; d <= H; d = addDays(d, 1), i++) {
       var s = ev[iso(d)] || { bills: [], pay: 0, isPay: false };
       var billSum = 0;
       s.bills.forEach(function (x) { billSum += x.a; });
-      var spent = i > 0 ? rate : 0;
-      bal = bal - spent;
+      var spent = 0;
       var before = bal;
       bal = bal + s.pay - billSum;
       idx[iso(d)] = days.length;
@@ -723,32 +724,32 @@
   function renderCycles(f) {
     var box = byId("cycles");
     box.textContent = "";
-    var p = f.pays;
-    var names = ["This fortnight", "Next fortnight"];
-    for (var k = 0; k < 2; k++) {
-      if (!p[k + 1]) break;
-      var a = f.idx[iso(p[k])], b = f.idx[iso(p[k + 1])];
-      if (a == null || b == null) break;
-      var startBal = f.days[a].before, pay = f.days[a].pay;
-      var bills = [], billSum = 0, spent = 0;
-      for (var i = a; i <= b; i++) {
-        if (i < b) { f.days[i].bills.forEach(function (x) { bills.push(x); }); billSum += f.days[i].billSum; }
-        if (i > a) spent += f.days[i].spent;
-      }
-      var end = f.days[b].before;
+    var today = f.today;
+    var next = f.pays.filter(function (d) { return d > today; });
+    var segs = [];
+    if (next[0]) segs.push({ from: today, to: next[0], chip: "Until next pay", cls: "chip", head: "Today to " + dayFmt.format(next[0]), startLabel: "In your bank now" });
+    if (next[1]) segs.push({ from: next[0], to: next[1], chip: "Next fortnight", cls: "chip alt", head: dayFmt.format(next[0]) + " to " + dayFmt.format(next[1]), startLabel: "Left over" });
+    segs.forEach(function (sg, k) {
+      var a = f.idx[iso(sg.from)], b = f.idx[iso(sg.to)];
+      if (a == null || b == null) return;
       var c = el("div", "cycle");
       var head = el("div", "cy-head");
-      head.appendChild(el("span", k ? "chip alt" : "chip", names[k]));
-      head.appendChild(el("span", "cy-dates", "Pay " + dayFmt.format(p[k]) + " to " + dayFmt.format(p[k + 1])));
+      head.appendChild(el("span", sg.cls, sg.chip));
+      head.appendChild(el("span", "cy-dates", sg.head));
       c.appendChild(head);
-      ledgerLine(c, "Before pay lands", null, fmt.format(round2(startBal)));
-      ledgerLine(c, "Pay", null, signed(round2(pay))).lastChild.className = "amt pos";
-      ledgerLine(c, "Bills", bills.length ? bills.map(function (x) { return x.name + " " + shortFmt.format(x.d); }).join(", ") : "None", minus(round2(billSum))).lastChild.className = "amt out";
-      ledgerLine(c, "Day-to-day", spent > 0 ? "14 days" : "Not set yet", minus(round2(spent))).lastChild.className = "amt spend";
-      var t = ledgerLine(c, "Left before next pay", null, fmt.format(round2(end)), "total");
+      ledgerLine(c, sg.startLabel, null, fmt.format(round2(k === 0 ? f.start : f.days[a].before)));
+      for (var i = a; i < b; i++) {
+        var day = f.days[i];
+        if (day.pay > 0) ledgerLine(c, "Pay", diffDays(today, day.d) === 0 ? "Tonight" : dayFmt.format(day.d), signed(round2(day.pay))).lastChild.className = "amt pos";
+        day.bills.forEach(function (x) {
+          ledgerLine(c, x.name, dayFmt.format(x.d), minus(round2(x.a))).lastChild.className = "amt out";
+        });
+      }
+      var end = f.days[b].before;
+      var t = ledgerLine(c, "Left before pay on " + dayFmt.format(sg.to), null, fmt.format(round2(end)), "total");
       t.lastChild.className = "amt " + (end < 0 ? "bad" : "good");
       box.appendChild(c);
-    }
+    });
   }
 
   function renderBills(today, far) {
@@ -768,7 +769,7 @@
     byId("todayLine").textContent = longFmt.format(today);
     var cd = today.getDate();
     var cardDay = new Date(today.getFullYear(), today.getMonth() + (cd > 21 ? 1 : 0), 21);
-    byId("cardWhen").textContent = cd === 21 ? "Paid off today" : "Paid off " + dayFmt.format(cardDay);
+    byId("cardWhen").textContent = cd === 21 ? "Comes out of your bank today" : "Comes out of your bank " + dayFmt.format(cardDay);
 
     var f = forecast(today);
     buildPays(f.pays.slice(0, 4), today);
@@ -776,14 +777,14 @@
     renderBills(today, addDays(today, 400));
 
     setVal("tToday", f.start);
-    var p0 = f.pays[0];
-    if (p0 && f.idx[iso(p0)] != null) {
-      setVal("tPay", f.days[f.idx[iso(p0)]].before);
-      byId("tPayD").textContent = diffDays(today, p0) === 0 ? "Tonight" : dayFmt.format(p0);
+    var p1 = f.pays.filter(function (d) { return d > today; })[0];
+    if (p1 && f.idx[iso(p1)] != null) {
+      setVal("tPay", f.days[f.idx[iso(p1)]].before);
+      byId("tPayD").textContent = dayFmt.format(p1);
     }
-    byId("tEomK").textContent = "Month end";
+    byId("tEomK").textContent = "On " + shortFmt.format(f.eom);
     setVal("tEom", f.days[f.idx[iso(f.eom)]].after);
-    byId("tEomD").textContent = dayFmt.format(f.eom);
+    byId("tEomD").textContent = "Month end";
     var warn = [];
     if (bankEl.value === "") warn.push("Type your bank balance below to start.");
     if (f.missing.length) warn.push("Not counted yet (no date): " + f.missing.join(", ") + ".");
@@ -800,7 +801,7 @@
         v: 4, tab: curTab,
         income: incomeEl.value,
         rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
-        bank: bankEl.value, card: cardEl.value, spend: spendEl.value, usualPay: usualEl.value, payOv: payOv,
+        bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv,
         bills: BILLS.map(function (b) { return { n: b.n || "", a: b.a, day: b.day || 0, next: b.next || "" }; })
       }));
     } catch (e) {}
@@ -812,7 +813,6 @@
   function nowDefaults() {
     usualEl.value = DEFAULT_PAY;
     payOv = {};
-    spendEl.value = "";
     BILLS.forEach(function (b) { b.a = b.da; b.day = b.dday; b.next = b.dnext; b.n = ""; });
   }
   function load() {
@@ -836,7 +836,6 @@
     bankEl.value = d.bank == null ? "" : d.bank;
     cardEl.value = d.card == null ? "" : d.card;
     if (d.v === 4) {
-      spendEl.value = d.spend == null ? "" : d.spend;
       usualEl.value = d.usualPay == null || d.usualPay === "" ? DEFAULT_PAY : d.usualPay;
       if (d.payOv && typeof d.payOv === "object") {
         Object.keys(d.payOv).forEach(function (k) { if (parseDate(k)) payOv[k] = String(d.payOv[k]); });
@@ -881,7 +880,7 @@
     save();
   }
 
-  [incomeEl, bankEl, cardEl, spendEl, usualEl].forEach(function (e) {
+  [incomeEl, bankEl, cardEl, usualEl].forEach(function (e) {
     e.addEventListener("input", update);
     e.addEventListener("focus", selectAll);
   });
