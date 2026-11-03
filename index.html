@@ -168,6 +168,13 @@
   .fold .fs::after { content: ""; display: block; flex: 0 0 9px; width: 9px; height: 9px; margin-top: -5px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.2s; }
   .fold[open] .fs::after { transform: rotate(225deg); margin-top: 3px; }
   .fold > summary + .row { border-top: 0; }
+  .src { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-left: 2px; }
+  .src.bank { background: color-mix(in srgb, #0ea5e9 14%, transparent); color: #0284c7; }
+  .src.card { background: color-mix(in srgb, #f59e0b 16%, transparent); color: #b45309; }
+  .subtotal { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0 10px; border-top: 1px solid var(--line); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .subtotal small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
+  .bl .bt { min-width: 0; }
+  .bl .bt small { display: block; margin-left: 0; }
   .cy { position: relative; margin: 10px 0 14px; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--field); overflow: hidden; }
   .cy::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cy, var(--accent)); }
   .cy-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -236,33 +243,43 @@
   <div class="panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget">
     <div class="sticky" role="status" aria-live="polite">
       <section class="hero">
-        <div class="tiles two">
-          <div class="tile"><div class="k"><span class="tdot" style="background:#fb923c"></span>Spending</div><div class="v" id="totalSpend">$0</div><div class="d">Each month</div></div>
-          <div class="tile"><div class="k"><span class="tdot" style="background:#34d399"></span>Savings</div><div class="v" id="savings">$0</div><div class="d">Each month</div></div>
+        <div class="tiles">
+          <div class="tile" style="--tc:#38bdf8"><div class="k">Each pay</div><div class="v" id="bPay">$0</div><div class="d">Fortnightly</div></div>
+          <div class="tile" style="--tc:#fb923c"><div class="k">Costs</div><div class="v" id="bCost">$0</div><div class="d">Per pay</div></div>
+          <div class="tile" style="--tc:#34d399"><div class="k">Left over</div><div class="v" id="bLeft">$0</div><div class="d">Per pay</div></div>
         </div>
         <div class="stack" id="stack"></div>
         <div class="hbar-label" id="barLabel"></div>
       </section>
     </div>
 
+    <section class="card" aria-labelledby="bpay-h">
+      <h2 id="bpay-h">Pay</h2>
+      <div class="row">
+        <label for="payBudget">Each pay<span class="s">After tax, every 2 weeks</span></label>
+        <div class="field"><span>$</span><input id="payBudget" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+      </div>
+      <p class="hint" id="payHint"></p>
+    </section>
+
     <section class="card" aria-labelledby="grp-h">
-      <h2 id="grp-h">Where it goes</h2>
+      <h2 id="grp-h">Where each pay goes</h2>
       <div id="groups"></div>
     </section>
 
-    <section class="card" aria-labelledby="inc-h">
-      <h2 id="inc-h">Income</h2>
-      <div class="row">
-        <label for="income">Monthly income<span class="s">After tax</span></label>
-        <div class="field"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
-      </div>
+    <section class="card" aria-labelledby="bank-h">
+      <h2 id="bank-h">From your bank</h2>
+      <div id="bankList"></div>
+      <div class="subtotal" id="bankTotal"></div>
     </section>
 
-    <section class="card" aria-labelledby="exp-h">
-      <h2 id="exp-h">Monthly spending</h2>
-      <div id="expenses"></div>
+    <section class="card" aria-labelledby="cardl-h">
+      <h2 id="cardl-h">On your card</h2>
+      <div id="cardList"></div>
+      <div class="subtotal" id="cardTotal"></div>
     </section>
 
+    <p class="hint" style="text-align:center">Amounts are per month. The app splits them across your fortnightly pays.</p>
     <div class="reset-wrap"><button type="button" class="ghost" id="resetBtn">Reset budget to starting numbers</button></div>
   </div>
 
@@ -355,7 +372,7 @@
   }
   function onDay(y, m, day) { var last = new Date(y, m + 1, 0).getDate(); return new Date(y, m, Math.min(day, last)); }
 
-  /* ================= Budget tab ================= */
+  /* ================= Budget tab: built around the fortnightly pay ================= */
   var GROUPS = {
     housing: { name: "Housing", c: "#8b5cf6" },
     food: { name: "Food and going out", c: "#f97316" },
@@ -367,20 +384,22 @@
     other: { name: "Other", c: "#94a3b8" }
   };
   var GROUP_ORDER = ["housing", "food", "bills", "car", "kids", "debt", "personal", "other"];
+  /* [name, amount a month, group, paid from] */
   var items = [
-    ["Rent", 2600, "housing"], ["Food", 400, "food"], ["Utilities", null, "bills"], ["Petrol", 200, "car"],
-    ["Phone", 55, "bills"], ["Internet", 70, "bills"], ["Kids' swimming", 104, "kids"], ["Haircuts", 100, "personal"],
-    ["Car insurance", 85, "car"], ["Rego", 75, "car"], ["Debt repayment", 500, "debt"],
-    ["Kids' costs", 300, "kids"], ["Clothing", 100, "personal"], ["Subscriptions", 225, "bills"],
-    ["Card annual fee ($420 a year)", 35, "debt"], ["Bars, venues and alcohol", 100, "food"],
-    ["Eating out", 100, "food"], ["Afterpay", 50, "debt"], ["Miscellaneous costs", null, "personal"]
+    ["Rent", 2600, "housing", "bank"], ["Child support", null, "kids", "bank"], ["Debt repayment", 500, "debt", "bank"],
+    ["Food", 400, "food", "card"], ["Petrol", 200, "car", "card"], ["Phone", 55, "bills", "card"], ["Internet", 70, "bills", "card"],
+    ["Utilities", null, "bills", "card"], ["Kids' swimming", 104, "kids", "card"], ["Kids' costs", 300, "kids", "card"],
+    ["Haircuts", 100, "personal", "card"], ["Clothing", 100, "personal", "card"], ["Car insurance", 85, "car", "card"], ["Rego", 75, "car", "card"],
+    ["Subscriptions", 225, "bills", "card"], ["Card annual fee ($420 a year)", 35, "debt", "card"],
+    ["Bars, venues and alcohol", 100, "food", "card"], ["Eating out", 100, "food", "card"], ["Afterpay", 50, "debt", "card"], ["Miscellaneous costs", null, "personal", "card"]
   ];
-  var BLANKS = 4;
-  var list = byId("expenses");
-  var incomeEl = byId("income");
+  var OLD_ORDER = ["Rent", "Food", "Utilities", "Petrol", "Phone", "Internet", "Kids' swimming", "Haircuts", "Car insurance", "Rego", "Debt repayment", "Kids' costs", "Clothing", "Subscriptions", "Card annual fee ($420 a year)", "Bars, venues and alcohol", "Eating out", "Afterpay", "Miscellaneous costs", "card-o1", "card-o2", "bank-o1", "bank-o2"];
+  var payBudgetEl = byId("payBudget");
   var rows = [];
+  var rowByKey = {};
   var uid = 0;
   var curTab = "now";
+  var monYr = new Intl.DateTimeFormat("en-AU", { month: "short", year: "numeric" });
 
   function moneyField(id, label) {
     var f = el("div", "field");
@@ -396,7 +415,7 @@
   }
 
   function dot(c) { var d = el("span", "dot"); d.style.setProperty("--c", c); return d; }
-  function addRow(name, amount, editable, group) {
+  function addRow(name, amount, editable, group, src, key) {
     uid++;
     var row = el("div", "row");
     var nameEl, left;
@@ -421,68 +440,88 @@
     m.input.addEventListener("input", update);
     row.appendChild(left);
     row.appendChild(m.wrap);
-    list.appendChild(row);
-    rows.push({ nameEl: editable ? nameEl : null, amtEl: m.input, defAmt: amount, g: group });
+    byId(src === "bank" ? "bankList" : "cardList").appendChild(row);
+    var rec = { nameEl: editable ? nameEl : null, amtEl: m.input, defAmt: amount, g: group, src: src, key: key || name };
+    rows.push(rec);
+    rowByKey[rec.key] = rec;
   }
-  items.forEach(function (i) { addRow(i[0], i[1], false, i[2]); });
-  for (var b0 = 0; b0 < BLANKS; b0++) addRow("", null, true, "other");
+  items.forEach(function (i) { addRow(i[0], i[1], false, i[2], i[3]); });
+  addRow("", null, true, "other", "bank", "bank-o1");
+  addRow("", null, true, "other", "bank", "bank-o2");
+  addRow("", null, true, "other", "card", "card-o1");
+  addRow("", null, true, "other", "card", "card-o2");
+
+  function setSub(id, label, monthly) {
+    var box = byId(id);
+    box.textContent = "";
+    var l = el("span", "", label);
+    l.appendChild(el("small", "", fmt0.format(Math.round(monthly * 12 / 26)) + " from each pay"));
+    box.appendChild(l);
+    box.appendChild(el("span", "", fmt0.format(round2(monthly)) + " a month"));
+  }
 
   function renderBudget() {
-    var income = num(incomeEl);
-    var total = 0;
-    rows.forEach(function (r) { total += num(r.amtEl); });
-    total = round2(total);
-    var savings = round2(income - total);
-    byId("totalSpend").textContent = fmt0.format(total);
-    var s = byId("savings");
-    s.textContent = fmt0.format(savings);
-    s.className = "v" + (savings < 0 ? " neg" : "");
-    var pct = income > 0 ? (total / income) * 100 : (total > 0 ? 100 : 0);
-    var sums = {};
-    rows.forEach(function (r) { sums[r.g] = (sums[r.g] || 0) + num(r.amtEl); });
-    var base = Math.max(income, total) || 1;
+    var pay = num(payBudgetEl);
+    var monthly = 0, bankM = 0, cardM = 0, sums = {};
+    rows.forEach(function (r) {
+      var a = num(r.amtEl);
+      monthly += a;
+      if (r.src === "bank") bankM += a; else cardM += a;
+      sums[r.g] = (sums[r.g] || 0) + a;
+    });
+    var perPay = monthly * 12 / 26;
+    var left = pay - perPay;
+    byId("bPay").textContent = fmt0.format(pay);
+    byId("bCost").textContent = fmt0.format(Math.round(perPay));
+    var lv = byId("bLeft");
+    lv.textContent = fmt0.format(Math.round(left));
+    lv.className = "v" + (left < 0 ? " neg" : "");
+
+    var base = Math.max(pay, perPay) || 1;
     var stack = byId("stack");
     stack.textContent = "";
     var gbox = byId("groups");
     gbox.textContent = "";
-    var order = GROUP_ORDER.filter(function (g) { return sums[g] > 0; }).sort(function (a, b) { return sums[b] - sums[a]; });
-    order.forEach(function (g) {
-      var seg = el("div");
-      seg.style.width = (sums[g] / base) * 100 + "%";
-      seg.style.background = GROUPS[g].c;
-      stack.appendChild(seg);
+    function grow(name, c, perP, small) {
       var row = el("div", "grp");
-      row.style.setProperty("--c", GROUPS[g].c);
+      row.style.setProperty("--c", c);
       var nm = el("div", "nm");
-      nm.appendChild(dot(GROUPS[g].c));
-      nm.appendChild(document.createTextNode(GROUPS[g].name));
-      var amt = el("div", "gamt", fmt0.format(round2(sums[g])));
-      amt.appendChild(el("small", "", (income > 0 ? Math.round((sums[g] / income) * 100) : 0) + "% of income"));
+      nm.appendChild(dot(c));
+      nm.appendChild(document.createTextNode(name));
+      var amt = el("div", "gamt", fmt0.format(Math.round(perP)));
+      amt.appendChild(el("small", "", small));
       var tr = el("div", "gtrack");
       var fill = el("div");
-      fill.style.width = (sums[g] / base) * 100 + "%";
+      fill.style.width = Math.max(0, Math.min(100, (perP / base) * 100)) + "%";
       tr.appendChild(fill);
       row.appendChild(nm); row.appendChild(amt); row.appendChild(tr);
       gbox.appendChild(row);
-    });
-    if (savings > 0) {
-      var srow = el("div", "grp");
-      srow.style.setProperty("--c", "#10b981");
-      var snm = el("div", "nm");
-      snm.appendChild(dot("#10b981"));
-      snm.appendChild(document.createTextNode("Savings"));
-      var samt = el("div", "gamt", fmt0.format(savings));
-      samt.appendChild(el("small", "", Math.round((savings / income) * 100) + "% of income"));
-      var str = el("div", "gtrack");
-      var sfill = el("div");
-      sfill.style.width = (savings / base) * 100 + "%";
-      str.appendChild(sfill);
-      srow.appendChild(snm); srow.appendChild(samt); srow.appendChild(str);
-      gbox.appendChild(srow);
     }
-    byId("barLabel").textContent = income > 0
-      ? Math.round(pct) + "% of your " + fmt0.format(income) + " income" + (savings < 0 ? " (over budget)" : "")
-      : "Enter your income to see savings";
+    GROUP_ORDER.filter(function (g) { return sums[g] > 0; }).sort(function (a, b) { return sums[b] - sums[a]; }).forEach(function (g) {
+      var perP = sums[g] * 12 / 26;
+      var seg = el("div");
+      seg.style.width = (perP / base) * 100 + "%";
+      seg.style.background = GROUPS[g].c;
+      stack.appendChild(seg);
+      grow(GROUPS[g].name, GROUPS[g].c, perP, fmt0.format(round2(sums[g])) + " a month");
+    });
+    if (left > 0) grow("Left over to save", "#10b981", left, fmt0.format(Math.round(2 * pay - monthly)) + " in a 2-pay month");
+
+    byId("barLabel").textContent = pay > 0
+      ? Math.round((perPay / pay) * 100) + "% of each pay goes on costs" + (left < 0 ? " (over budget)" : "")
+      : "Enter your pay to see what is left";
+
+    setSub("bankTotal", "Total from your bank", bankM);
+    setSub("cardTotal", "Total on your card", cardM);
+
+    /* months with 3 paydays in the next year */
+    var t = startOfDay(new Date());
+    var from = new Date(t.getFullYear(), t.getMonth(), 1), to = new Date(t.getFullYear(), t.getMonth() + 13, 0);
+    var cnt = {}, first = {};
+    payDates(from, to).forEach(function (d) { var k = d.getFullYear() * 12 + d.getMonth(); cnt[k] = (cnt[k] || 0) + 1; if (!first[k]) first[k] = d; });
+    var three = Object.keys(cnt).filter(function (k) { return cnt[k] >= 3; }).map(function (k) { return monYr.format(first[k]); });
+    byId("payHint").textContent = "Most months have 2 pays, so " + fmt0.format(2 * pay) + " comes in." +
+      (three.length ? " These months have 3 pays and an extra " + fmt0.format(pay) + ": " + three.join(", ") + "." : "");
   }
 
   /* ================= Right now tab ================= */
@@ -493,18 +532,19 @@
 
   /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
   var BILLS = [
-    { id: "rent", name: "Rent", every: "m", da: "2600", dday: 1, dnext: "2026-11-04", c: "#8b5cf6" },
-    { id: "debt", name: "Debt repayment", every: "m", da: "500", dday: 0, dnext: "", c: "#ef4444" },
-    { id: "phone", name: "Phone", every: "m", da: "55", dday: 6, dnext: "", c: "#0ea5e9" },
-    { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "", c: "#0ea5e9" },
-    { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05", c: "#ec4899" },
-    { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "", c: "#0ea5e9" },
-    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o3", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o4", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o5", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" },
-    { id: "o6", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8" }
+    { id: "rent", name: "Rent", every: "m", da: "2600", dday: 1, dnext: "2026-11-04", c: "#8b5cf6", src: "bank" },
+    { id: "child", name: "Child support", every: "m", da: "", dday: 0, dnext: "", c: "#ec4899", src: "bank" },
+    { id: "debt", name: "Debt repayment", every: "m", da: "500", dday: 0, dnext: "", c: "#ef4444", src: "bank" },
+    { id: "phone", name: "Phone", every: "m", da: "55", dday: 6, dnext: "", c: "#0ea5e9", src: "card" },
+    { id: "net", name: "Internet", every: "m", da: "70", dday: 28, dnext: "", c: "#0ea5e9", src: "card" },
+    { id: "swim", name: "Swimming", every: "f", da: "48", dday: 0, dnext: "2026-11-05", c: "#ec4899", src: "card" },
+    { id: "apple", name: "Apple", every: "m", da: "52.95", dday: 5, dnext: "", c: "#0ea5e9", src: "card" },
+    { id: "o1", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
+    { id: "o2", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
+    { id: "o3", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
+    { id: "o4", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
+    { id: "o5", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" },
+    { id: "o6", name: "", every: "m", da: "", dday: 0, dnext: "", other: true, c: "#94a3b8", src: "card" }
   ];
   function billName(b) { if (b.other) { var n = (b.n || "").trim(); return n || "Other bill"; } return b.name; }
 
@@ -579,6 +619,7 @@
         lab.htmlFor = "ba-" + b.id;
         lab.appendChild(dot(b.c));
         lab.appendChild(document.createTextNode(b.name));
+        lab.appendChild(el("span", "src " + b.src, b.src === "bank" ? "Bank" : "Card"));
         top.appendChild(lab);
       }
       m.input.addEventListener("input", function () { b.a = m.input.value; update(); });
@@ -700,14 +741,14 @@
       var a = round2(numv(b.a));
       if (a <= 0) return;
       if (!hasDate(b)) missing.push(billName(b));
-      billPlan(effBill(b, today), today, H).dates.forEach(function (d) { var key = b.id + "|" + iso(d); slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c, key: key, paid: !!paid[key] }); });
+      billPlan(effBill(b, today), today, H).dates.forEach(function (d) { var key = b.id + "|" + iso(d); slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c, key: key, paid: !!paid[key], src: b.src }); });
     });
     var cardAmt = round2(num(cardEl));
     if (cardAmt > 0) {
       /* Only what is owed on the card now. No guessing future card bills. */
       var due = billPlan({ every: "m", day: 21, next: "" }, today, addDays(today, 40)).dates[0];
       var ckey = "card|" + iso(due);
-      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b", key: ckey, paid: !!paid[ckey] });
+      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b", key: ckey, paid: !!paid[ckey], src: "bank" });
     }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
     var bal = num(bankEl);
@@ -842,13 +883,14 @@
           row.appendChild(tick);
           var nm = el("div", "nm");
           nm.appendChild(dot(x.c || "#94a3b8"));
-          nm.appendChild(document.createTextNode(x.name));
-          nm.appendChild(el("small", "", x.paid ? "Paid" : shortFmt.format(x.d)));
+          var bt = el("span", "bt", x.name);
+          bt.appendChild(el("small", "", x.paid ? (x.src === "card" ? "On card" : "Paid") : shortFmt.format(x.d) + (x.src === "card" ? ", card" : ", bank")));
+          nm.appendChild(bt);
           row.appendChild(nm);
           row.appendChild(el("span", "amt", "-" + fmt.format(round2(x.a))));
           det.appendChild(row);
         });
-        det.appendChild(el("p", "hint", "Tick a bill once it has come out of your bank and Bank now shows it."));
+        det.appendChild(el("p", "hint", "Tick a bank bill once it is out of your bank. Tick a card bill once it shows in Card owed."));
         c.appendChild(det);
       }
       box.appendChild(c);
@@ -910,15 +952,15 @@
     try {
       localStorage.setItem(KEY, JSON.stringify({
         v: 4, tab: curTab,
-        income: incomeEl.value,
-        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
+        payBudget: payBudgetEl.value,
+        rows: rows.map(function (r) { return { k: r.key, n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
         bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid,
-        bills: BILLS.map(function (b) { return { n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
+        bills: BILLS.map(function (b) { return { id: b.id, n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
       }));
     } catch (e) {}
   }
   function budgetDefaults() {
-    incomeEl.value = DEFAULT_INCOME;
+    payBudgetEl.value = DEFAULT_PAY;
     rows.forEach(function (r) { r.amtEl.value = r.defAmt === null ? "" : r.defAmt; if (r.nameEl) r.nameEl.value = ""; });
   }
   function nowDefaults() {
@@ -937,11 +979,15 @@
     try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d !== "object") return;
     curTab = d.tab === "budget" ? "budget" : "now";
-    if (Array.isArray(d.rows) && d.rows.length === rows.length) {
-      incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
+    if (d.payBudget != null && d.payBudget !== "") payBudgetEl.value = d.payBudget;
+    if (Array.isArray(d.rows)) {
+      var keyed = d.rows.length && d.rows[0] && d.rows[0].k;
       d.rows.forEach(function (s, i) {
-        rows[i].amtEl.value = s && s.a != null ? s.a : "";
-        if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
+        if (!s) return;
+        var rr = rowByKey[keyed ? s.k : OLD_ORDER[i]];
+        if (!rr) return;
+        rr.amtEl.value = s.a != null ? s.a : "";
+        if (rr.nameEl) rr.nameEl.value = typeof s.n === "string" ? s.n : "";
       });
     }
     bankEl.value = d.bank == null ? "" : d.bank;
@@ -955,9 +1001,13 @@
         Object.keys(d.paid).forEach(function (k) { if (d.paid[k]) paid[k] = 1; });
       }
       if (Array.isArray(d.bills)) {
+        var OLD_IDS = ["rent", "debt", "phone", "net", "swim", "apple", "o1", "o2", "o3", "o4", "o5", "o6"];
         d.bills.forEach(function (s, i) {
-          if (!s || !BILLS[i]) return;
-          var b = BILLS[i];
+          if (!s) return;
+          var id = s.id || OLD_IDS[i];
+          var b = null;
+          BILLS.forEach(function (x) { if (x.id === id) b = x; });
+          if (!b) return;
           b.a = s.a == null ? "" : String(s.a);
           b.day = +s.day || 0;
           if (s.every === "m" || s.every === "f" || s.every === "w") b.every = s.every;
@@ -980,6 +1030,23 @@
       }
     }
   }
+  /* Child support used to sit in an Other row. Move it to its own row. */
+  function moveChild() {
+    var child = null;
+    BILLS.forEach(function (x) { if (x.id === "child") child = x; });
+    BILLS.forEach(function (b) {
+      if (!b.other || !child || numv(child.a) > 0) return;
+      if (/child support/i.test(b.n || "")) {
+        child.a = b.a; child.every = b.every; child.day = b.day; child.next = b.next;
+        b.a = ""; b.n = ""; b.day = 0; b.next = ""; b.every = "m";
+      }
+    });
+    var br = rowByKey["Child support"];
+    if (child && br && br.amtEl.value === "" && numv(child.a) > 0) {
+      var per = child.every === "w" ? 52 / 12 : child.every === "f" ? 26 / 12 : 1;
+      br.amtEl.value = String(round2(numv(child.a) * per));
+    }
+  }
   function tidy() {
     var today = startOfDay(new Date());
     Object.keys(payOv).forEach(function (k) { var d = parseDate(k); if (!d || d < today) delete payOv[k]; });
@@ -996,7 +1063,7 @@
     save();
   }
 
-  [incomeEl, bankEl, cardEl, usualEl].forEach(function (e) {
+  [payBudgetEl, bankEl, cardEl, usualEl].forEach(function (e) {
     e.addEventListener("input", update);
     e.addEventListener("focus", selectAll);
   });
@@ -1037,6 +1104,7 @@
 
   buildBills();
   load();
+  moveChild();
   tidy();
   syncBillInputs();
   update();
