@@ -175,6 +175,9 @@
   .subtotal small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
   .bl .bt { min-width: 0; }
   #billList .bill { padding-block: 0; }
+  .hero .hseg { margin: 0 0 12px; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.16); }
+  .hero .hseg button { color: rgba(255, 255, 255, 0.8); min-height: 36px; }
+  .hero .hseg button[aria-pressed="true"] { background: #fff; color: #4338ca; }
   .bsum { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 10px; gap: 12px; align-items: center; min-height: 62px; cursor: pointer; list-style: none; }
   .bsum::-webkit-details-marker { display: none; }
   .bsum::after { content: ""; width: 7px; height: 7px; margin-top: -4px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.2s; }
@@ -256,11 +259,12 @@
   <!-- ===== Budget tab ===== -->
   <div class="panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget">
     <div class="sticky" role="status" aria-live="polite">
-      <section class="hero">
+      <section class="hero" id="budgetHero">
+        <div class="seg hseg" role="group" aria-label="Show budget"><button type="button" id="vPay">Fortnightly</button><button type="button" id="vMonth">Monthly</button></div>
         <div class="tiles">
-          <div class="tile" style="--tc:#38bdf8"><div class="k">Each pay</div><div class="v" id="bPay">$0</div><div class="d">Fortnightly</div></div>
-          <div class="tile" style="--tc:#fb923c"><div class="k">Costs</div><div class="v" id="bCost">$0</div><div class="d">Per pay</div></div>
-          <div class="tile" style="--tc:#34d399"><div class="k">Left over</div><div class="v" id="bLeft">$0</div><div class="d">Per pay</div></div>
+          <div class="tile" style="--tc:#38bdf8"><div class="k" id="bPayK">Each pay</div><div class="v" id="bPay">$0</div><div class="d" id="bPayD">Fortnightly</div></div>
+          <div class="tile" style="--tc:#fb923c"><div class="k">Costs</div><div class="v" id="bCost">$0</div><div class="d" id="bCostD">Per pay</div></div>
+          <div class="tile" style="--tc:#34d399"><div class="k">Left over</div><div class="v" id="bLeft">$0</div><div class="d" id="bLeftD">Per pay</div></div>
         </div>
         <div class="stack" id="stack"></div>
         <div class="hbar-label" id="barLabel"></div>
@@ -413,6 +417,7 @@
   var rowByKey = {};
   var uid = 0;
   var curTab = "now";
+  var bView = "pay";
   var monYr = new Intl.DateTimeFormat("en-AU", { month: "short", year: "numeric" });
 
   function moneyField(id, label) {
@@ -483,15 +488,26 @@
       if (r.src === "bank") bankM += a; else cardM += a;
       sums[r.g] = (sums[r.g] || 0) + a;
     });
-    var perPay = monthly * 12 / 26;
-    var left = pay - perPay;
-    byId("bPay").textContent = fmt0.format(pay);
+    /* Fortnightly view: per pay. Monthly view: a normal 2-pay month. */
+    var isM = bView === "month";
+    var k = isM ? 1 : 12 / 26;
+    var income = isM ? 2 * pay : pay;
+    var perPay = monthly * k;
+    var left = income - perPay;
+    byId("vPay").setAttribute("aria-pressed", isM ? "false" : "true");
+    byId("vMonth").setAttribute("aria-pressed", isM ? "true" : "false");
+    byId("bPayK").textContent = isM ? "Income" : "Each pay";
+    byId("bPayD").textContent = isM ? "2 pays" : "Fortnightly";
+    byId("bCostD").textContent = isM ? "Per month" : "Per pay";
+    byId("bLeftD").textContent = isM ? "Per month" : "Per pay";
+    byId("grp-h").textContent = isM ? "Where each month goes" : "Where each pay goes";
+    byId("bPay").textContent = fmt0.format(income);
     byId("bCost").textContent = fmt0.format(Math.round(perPay));
     var lv = byId("bLeft");
     lv.textContent = fmt0.format(Math.round(left));
     lv.className = "v" + (left < 0 ? " neg" : "");
 
-    var base = Math.max(pay, perPay) || 1;
+    var base = Math.max(income, perPay) || 1;
     var stack = byId("stack");
     stack.textContent = "";
     var gbox = byId("groups");
@@ -512,17 +528,17 @@
       gbox.appendChild(row);
     }
     GROUP_ORDER.filter(function (g) { return sums[g] > 0; }).sort(function (a, b) { return sums[b] - sums[a]; }).forEach(function (g) {
-      var perP = sums[g] * 12 / 26;
+      var perP = sums[g] * k;
       var seg = el("div");
       seg.style.width = (perP / base) * 100 + "%";
       seg.style.background = GROUPS[g].c;
       stack.appendChild(seg);
-      grow(GROUPS[g].name, GROUPS[g].c, perP, fmt0.format(round2(sums[g])) + " a month");
+      grow(GROUPS[g].name, GROUPS[g].c, perP, isM ? fmt0.format(Math.round(sums[g] * 12 / 26)) + " per pay" : fmt0.format(round2(sums[g])) + " a month");
     });
-    if (left > 0) grow("Left over to save", "#10b981", left, fmt0.format(Math.round(2 * pay - monthly)) + " in a 2-pay month");
+    if (left > 0) grow("Left over to save", "#10b981", left, isM ? fmt0.format(Math.round(pay - monthly * 12 / 26)) + " per pay" : fmt0.format(Math.round(2 * pay - monthly)) + " in a 2-pay month");
 
-    byId("barLabel").textContent = pay > 0
-      ? Math.round((perPay / pay) * 100) + "% of each pay goes on costs" + (left < 0 ? " (over budget)" : "")
+    byId("barLabel").textContent = income > 0
+      ? Math.round((perPay / income) * 100) + (isM ? "% of a 2-pay month goes on costs" : "% of each pay goes on costs") + (left < 0 ? " (over budget)" : "")
       : "Enter your pay to see what is left";
 
     setSub("bankTotal", "Total from your bank", bankM);
@@ -1022,7 +1038,7 @@
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        v: 4, tab: curTab,
+        v: 4, tab: curTab, bView: bView,
         payBudget: payBudgetEl.value,
         rows: rows.map(function (r) { return { k: r.key, n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
         bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid, bankAt: bankAt,
@@ -1050,6 +1066,7 @@
     try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d !== "object") return;
     curTab = d.tab === "budget" ? "budget" : "now";
+    if (d.bView === "month") bView = "month";
     if (d.payBudget != null && d.payBudget !== "") payBudgetEl.value = d.payBudget;
     if (Array.isArray(d.rows)) {
       var keyed = d.rows.length && d.rows[0] && d.rows[0].k;
@@ -1156,6 +1173,19 @@
     try { window.scrollTo(0, 0); } catch (e) {}
   }
   byId("tab-budget").addEventListener("click", function () { showTab("budget"); });
+
+  /* Budget: tap or swipe the purple card to switch Fortnightly / Monthly */
+  function setView(v) { bView = v; update(); }
+  byId("vPay").addEventListener("click", function () { setView("pay"); });
+  byId("vMonth").addEventListener("click", function () { setView("month"); });
+  var heroB = byId("budgetHero"), sx = null, sy = null;
+  heroB.addEventListener("touchstart", function (e) { var t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+  heroB.addEventListener("touchend", function (e) {
+    if (sx === null) return;
+    var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    sx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) setView(dx < 0 ? "month" : "pay");
+  });
   byId("tab-now").addEventListener("click", function () { showTab("now"); });
 
   /* ---- reset budget lines: second tap within 4 seconds ---- */
