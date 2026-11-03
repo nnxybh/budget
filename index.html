@@ -158,6 +158,16 @@
 
   /* Fortnight breakdown */
   .field.date.needs { border-color: var(--warn); }
+  .fold { padding-top: 0; padding-bottom: 0; }
+  .fold[open] { padding-bottom: 6px; }
+  .fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; cursor: pointer; list-style: none; }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold[open] > summary { border-bottom: 1px solid var(--line); }
+  .fold .ft { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .fold .fs { display: flex; align-items: center; gap: 12px; min-width: 0; font-size: 15px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .fold .fs::after { content: ""; display: block; flex: 0 0 9px; width: 9px; height: 9px; margin-top: -5px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.2s; }
+  .fold[open] .fs::after { transform: rotate(225deg); margin-top: 3px; }
+  .fold > summary + .row { border-top: 0; }
   .cy { position: relative; margin: 10px 0 14px; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--field); overflow: hidden; }
   .cy::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cy, var(--accent)); }
   .cy-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -261,8 +271,13 @@
       <div class="hero-warn" id="heroWarn"></div>
     </section>
 
-    <section class="card" aria-labelledby="money-h">
-      <h2 id="money-h">Your money now</h2>
+    <section class="card" aria-labelledby="cy-h">
+      <h2 id="cy-h">Pay by pay</h2>
+      <div id="cycles"></div>
+    </section>
+
+    <details class="card fold">
+      <summary><span class="ft">Your money now</span><span class="fs" id="moneySum"></span></summary>
       <div class="row">
         <label for="bank">Bank today<span class="s">What your account shows</span></label>
         <div class="field"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
@@ -272,28 +287,23 @@
         <div class="field"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
       <p class="hint">Your card is your day-to-day spending. Put in what you owe on it now, and top it up as you spend.</p>
-    </section>
+    </details>
 
-    <section class="card" aria-labelledby="cy-h">
-      <h2 id="cy-h">Pay by pay</h2>
-      <div id="cycles"></div>
-    </section>
-
-    <section class="card" aria-labelledby="pay-h">
-      <h2 id="pay-h">Pay</h2>
+    <details class="card fold">
+      <summary><span class="ft">Pay</span><span class="fs" id="paySum"></span></summary>
       <div class="row">
         <label for="usualPay">Usual pay<span class="s">Every 2 weeks</span></label>
         <div class="field"><span>$</span><input id="usualPay" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
       </div>
       <div id="payList"></div>
       <p class="hint">Acting or higher duties? Change that pay. Clear it to go back to your usual pay.</p>
-    </section>
+    </details>
 
-    <section class="card" aria-labelledby="bill-h">
-      <h2 id="bill-h">Bills</h2>
+    <details class="card fold">
+      <summary><span class="ft">Bills</span><span class="fs" id="billSum"></span></summary>
       <div id="billList"></div>
       <p class="hint">Paying late or early? Change the next date. After that it goes back to its usual day.</p>
-    </section>
+    </details>
   </div>
 
   <p class="foot">Amounts in AUD. Saved only on this phone.</p>
@@ -666,10 +676,13 @@
   /* ---- the forecast ---- */
   function forecast(today) {
     var eom = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    var pays = payDates(today, addDays(today, 70));
+    var pays = payDates(today, addDays(today, 80));
+    /* Pay lands about 11:30pm on payday Wednesday. After that it is in the bank, so it is not added again. */
+    var now = new Date();
+    if (pays[0] && pays[0].getTime() === today.getTime() && now >= new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 30)) pays.shift();
     var H = eom;
-    var ahead = pays.filter(function (d) { return d > today; });
-    if (ahead[2] && ahead[2] > H) H = ahead[2];
+    var need = pays[0] && pays[0].getTime() === today.getTime() ? pays[3] : pays[2];
+    if (need && need > H) H = need;
     var ev = {};
     function slot(d) { var k = iso(d); return ev[k] || (ev[k] = { bills: [], pay: 0, isPay: false }); }
     var missing = [];
@@ -682,7 +695,8 @@
     var cardAmt = round2(num(cardEl));
     if (cardAmt > 0) {
       billPlan({ every: "m", day: 21, next: "" }, today, H).dates.forEach(function (d, n) {
-        slot(d).bills.push({ name: n ? "Card bill (guess)" : "Card bill", a: cardAmt, d: d, c: "#f59e0b" });
+        var when = n ? d : today;
+        slot(when).bills.push({ name: n ? "Card bill (guess)" : "Card owed, due " + shortFmt.format(d), a: cardAmt, d: when, c: "#f59e0b" });
       });
     }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
@@ -760,11 +774,17 @@
     var box = byId("cycles");
     box.textContent = "";
     var today = f.today;
-    var next = f.pays.filter(function (d) { return d > today; });
+    var next = f.pays;
     var segs = [];
-    if (next[0]) segs.push({ from: today, to: next[0], chip: "Until next pay", cls: "chip", c: "var(--accent)" });
-    if (next[1]) segs.push({ from: next[0], to: next[1], chip: "Next fortnight", cls: "chip alt", c: "#ec4899" });
-    if (next[2]) segs.push({ from: next[1], to: next[2], chip: "Fortnight after", cls: "chip amb", c: "#f59e0b" });
+    if (next[0] && next[0].getTime() === today.getTime()) {
+      if (next[1]) segs.push({ from: next[0], to: next[1], chip: "This fortnight", cls: "chip", c: "var(--accent)" });
+      if (next[2]) segs.push({ from: next[1], to: next[2], chip: "Next fortnight", cls: "chip alt", c: "#ec4899" });
+      if (next[3]) segs.push({ from: next[2], to: next[3], chip: "Fortnight after", cls: "chip amb", c: "#f59e0b" });
+    } else {
+      if (next[0]) segs.push({ from: today, to: next[0], chip: "Until next pay", cls: "chip", c: "var(--accent)" });
+      if (next[1]) segs.push({ from: next[0], to: next[1], chip: "Next fortnight", cls: "chip alt", c: "#ec4899" });
+      if (next[2]) segs.push({ from: next[1], to: next[2], chip: "Fortnight after", cls: "chip amb", c: "#f59e0b" });
+    }
     segs.forEach(function (sg, k) {
       var a = f.idx[iso(sg.from)], b = f.idx[iso(sg.to)];
       if (a == null || b == null) return;
@@ -831,7 +851,7 @@
     byId("todayLine").textContent = longFmt.format(today);
     var cd = today.getDate();
     var cardDay = new Date(today.getFullYear(), today.getMonth() + (cd > 21 ? 1 : 0), 21);
-    byId("cardWhen").textContent = cd === 21 ? "Comes out of your bank today" : "Comes out of your bank " + dayFmt.format(cardDay);
+    byId("cardWhen").textContent = "Taken off now. Paid " + (cd === 21 ? "today" : dayFmt.format(cardDay));
 
     var f = forecast(today);
     buildPays(f.pays.slice(0, 4), today);
@@ -839,11 +859,16 @@
     renderBills(today, addDays(today, 400));
 
     setVal("tToday", f.start);
-    var p1 = f.pays.filter(function (d) { return d > today; })[0];
+    var p1 = f.pays[0];
     if (p1 && f.idx[iso(p1)] != null) {
       setVal("tPay", f.days[f.idx[iso(p1)]].before);
-      byId("tPayD").textContent = dayFmt.format(p1);
+      byId("tPayD").textContent = diffDays(today, p1) === 0 ? "Tonight" : dayFmt.format(p1);
     }
+    byId("moneySum").textContent = "Bank " + fmt0.format(num(bankEl));
+    byId("paySum").textContent = p1 ? fmt0.format(payAmt(p1)) + (diffDays(today, p1) === 0 ? " tonight" : " on " + shortFmt.format(p1)) : "";
+    var nb = 0;
+    BILLS.forEach(function (b) { if (numv(b.a) > 0) nb++; });
+    byId("billSum").textContent = nb + (nb === 1 ? " bill" : " bills") + (f.missing.length ? ", " + f.missing.length + (f.missing.length === 1 ? " needs" : " need") + " a date" : "");
     byId("tEomK").textContent = "On " + shortFmt.format(f.eom);
     setVal("tEom", f.days[f.idx[iso(f.eom)]].after);
     byId("tEomD").textContent = "Month end";
@@ -980,6 +1005,7 @@
   });
 
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { tidy(); update(); } });
+  setInterval(function () { if (!document.hidden) renderNow(); }, 60000);
 
   buildBills();
   load();
