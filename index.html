@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Budget</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="application-name" content="Budget">
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121715" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+  /* Layout: one phone-width column. Sticky summary on top, income, spending rows, cash and card, reset. */
+  :root {
+    --bg: #f3f5f4;
+    --surface: #ffffff;
+    --field: #f3f6f5;
+    --ink: #17211d;
+    --muted: #5d6b65;
+    --line: #dde4e0;
+    --accent: #1f6b57;
+    --good: #1a7f4f;
+    --bad: #c63a32;
+    --bar-track: #dde4e0;
+    --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121715; --surface: #1b231f; --field: #121815; --ink: #e8eeea; --muted: #9aaaa2;
+      --line: #2b3732; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --bar-track: #2b3732;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121715; --surface: #1b231f; --field: #121815; --ink: #e8eeea; --muted: #9aaaa2;
+    --line: #2b3732; --accent: #5fc4a3; --good: #4fd08f; --bad: #ff7a70; --bar-track: #2b3732;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.4;
+    padding-block: 0 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 10; background: var(--bg);
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  header { padding-top: max(18px, env(safe-area-inset-top, 0px)); }
+  h1 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .sub { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+
+  .summary-bar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--bg); padding-block: 12px;
+  }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+  .stat .label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { font-family: var(--font-display); font-size: 26px; line-height: 1.15; margin-top: 2px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .value.pos { color: var(--good); }
+  .value.neg { color: var(--bad); }
+  .bar { height: 8px; border-radius: 99px; background: var(--bar-track); overflow: hidden; margin-top: 12px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width 0.2s ease; }
+  .bar.over > div { background: var(--bad); }
+  .bar-label { margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 6px 16px; margin-top: 14px; }
+  .card h2 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 12px; padding-block: 6px; border-top: 1px solid var(--line); min-height: 60px; }
+  h2 + .row, h2 + div > .row:first-child { border-top: 0; }
+  .row > label { flex: 1 1 0; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+  .name-input {
+    flex: 1 1 0; min-width: 0; height: 48px; font: inherit; font-size: 17px; color: var(--ink);
+    background: transparent; border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 0 2px;
+    -webkit-appearance: none; appearance: none;
+  }
+  .name-input::placeholder { color: var(--muted); opacity: 1; }
+  .name-input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+
+  .money {
+    flex: 0 0 132px; display: flex; align-items: center; height: 48px; padding: 0 12px;
+    background: var(--field); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .money:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .money span { color: var(--muted); margin-right: 4px; font-size: 17px; }
+  .money input {
+    flex: 1; min-width: 0; width: 100%; height: 100%; border: 0; background: transparent; color: var(--ink);
+    font: inherit; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; padding: 0;
+    -webkit-appearance: none; appearance: none; -moz-appearance: textfield;
+  }
+  .money input:focus { outline: none; }
+  .money input::-webkit-outer-spin-button, .money input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .money input::placeholder { color: var(--muted); opacity: 0.7; }
+  .income .money { flex-basis: 150px; }
+  .income .money input { font-weight: 600; }
+  .hint { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+
+  .result { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); }
+  .result .label { font-size: 17px; font-weight: 600; }
+  .result .value { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; text-align: right; }
+  .status { margin: 0 0 4px; font-size: 15px; font-weight: 500; }
+
+  .reset-wrap { margin-top: 18px; text-align: center; }
+  button.ghost {
+    min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer;
+  }
+  button.ghost.armed { color: var(--bad); border-color: var(--bad); }
+  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
+  noscript p { padding: 16px; color: var(--bad); }
+  @media (max-width: 360px) { .money { flex-basis: 116px; } .stat .value { font-size: 22px; } }
+  @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
+</style>
+</head>
+<body>
+<noscript><p>This budget needs JavaScript turned on.</p></noscript>
+<div class="wrap">
+  <header>
+    <h1>Monthly Budget</h1>
+    <p class="sub">Change any number. Totals update as you type and your numbers are saved on this phone.</p>
+  </header>
+
+  <div class="summary-bar" role="status" aria-live="polite">
+    <div class="summary">
+      <div class="stat">
+        <div class="label">Total spending</div>
+        <div class="value" id="totalSpend">$0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Savings / month</div>
+        <div class="value pos" id="savings">$0</div>
+      </div>
+    </div>
+    <div class="bar" id="bar"><div id="barFill"></div></div>
+    <div class="bar-label" id="barLabel"></div>
+  </div>
+
+  <section class="card income" aria-labelledby="inc-h">
+    <h2 id="inc-h">Income</h2>
+    <div class="row">
+      <label for="income">Monthly income (net)</label>
+      <div class="money"><span>$</span><input id="income" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
+    </div>
+    <p class="hint">About $2,770 to $2,780 per fortnight.</p>
+  </section>
+
+  <section class="card" aria-labelledby="exp-h">
+    <h2 id="exp-h">Monthly spending</h2>
+    <div id="expenses"></div>
+  </section>
+
+  <section class="card" aria-labelledby="cash-h">
+    <h2 id="cash-h">Cash and credit card</h2>
+    <div class="row">
+      <label for="bank">Bank balance today</label>
+      <div class="money"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+    </div>
+    <div class="row">
+      <label for="cardOwed">Spent on card this statement</label>
+      <div class="money"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+    </div>
+    <div class="result">
+      <div class="label">Left after paying the card</div>
+      <div class="value" id="freeCash">$0</div>
+    </div>
+    <p class="status" id="cardDates"></p>
+    <p class="hint">Card purchases are already counted in the spending lines above. This only shows what you pay in full on the 21st.</p>
+  </section>
+
+  <div class="reset-wrap">
+    <button type="button" class="ghost" id="resetBtn">Reset to starting budget</button>
+  </div>
+  <p class="foot">Amounts are per month in AUD. Saved only in this browser.</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "budget-v2";
+  var DEFAULT_INCOME = 5995;
+  var items = [
+    ["Rent", 2600], ["Food", 400], ["Utilities", 250], ["Petrol", 200],
+    ["Phone", 80], ["Internet", 80], ["Kids' swimming", 100], ["Haircuts", 100],
+    ["Car insurance", 85], ["Rego", 75], ["Debt repayment", 500],
+    ["School costs", 300], ["Clothing", 100], ["Subscriptions", 225]
+  ];
+  var BLANKS = 4;
+
+  var list = document.getElementById("expenses");
+  var incomeEl = document.getElementById("income");
+  var bankEl = document.getElementById("bank");
+  var cardEl = document.getElementById("cardOwed");
+  var rows = []; // { nameEl|null, amtEl }
+  var uid = 0;
+
+  function selectAll(e) { var el = e.target; setTimeout(function () { try { el.select(); } catch (x) {} }, 0); }
+
+  function addRow(name, amount, editable) {
+    uid++;
+    var row = document.createElement("div");
+    row.className = "row";
+    var nameEl;
+    if (editable) {
+      nameEl = document.createElement("input");
+      nameEl.type = "text";
+      nameEl.id = "other-name-" + uid;
+      nameEl.className = "name-input";
+      nameEl.placeholder = "Other";
+      nameEl.maxLength = 40;
+      nameEl.setAttribute("aria-label", "Expense name");
+      nameEl.autocomplete = "off";
+      nameEl.addEventListener("input", save);
+    } else {
+      nameEl = document.createElement("label");
+      nameEl.htmlFor = "amt-" + uid;
+      nameEl.textContent = name;
+    }
+    var money = document.createElement("div");
+    money.className = "money";
+    money.innerHTML = '<span>$</span><input class="amt" id="amt-' + uid + '" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0">';
+    var input = money.querySelector("input");
+    if (amount !== null) input.value = amount;
+    if (editable) input.setAttribute("aria-label", "Amount for other expense");
+    input.addEventListener("input", update);
+    input.addEventListener("focus", selectAll);
+    row.appendChild(nameEl);
+    row.appendChild(money);
+    list.appendChild(row);
+    rows.push({ nameEl: editable ? nameEl : null, amtEl: input, defAmt: amount });
+  }
+
+  items.forEach(function (i) { addRow(i[0], i[1], false); });
+  for (var b = 0; b < BLANKS; b++) addRow("", null, true);
+
+  var fmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  function num(el) {
+    var v = parseFloat(el.value);
+    if (!isFinite(v) || v < 0) return 0;
+    return Math.min(v, 1e9);
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  /* ---------- saving and loading ---------- */
+  function save() {
+    try {
+      var data = {
+        income: incomeEl.value, bank: bankEl.value, card: cardEl.value,
+        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; })
+      };
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function applyDefaults() {
+    incomeEl.value = DEFAULT_INCOME;
+    bankEl.value = "";
+    cardEl.value = "";
+    rows.forEach(function (r) {
+      r.amtEl.value = r.defAmt === null ? "" : r.defAmt;
+      if (r.nameEl) r.nameEl.value = "";
+    });
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    if (!raw) { applyDefaults(); return; }
+    try {
+      var d = JSON.parse(raw);
+      if (!d || !Array.isArray(d.rows) || d.rows.length !== rows.length) throw new Error("shape");
+      incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
+      bankEl.value = d.bank == null ? "" : d.bank;
+      cardEl.value = d.card == null ? "" : d.card;
+      d.rows.forEach(function (s, i) {
+        rows[i].amtEl.value = s && s.a != null ? s.a : "";
+        if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
+      });
+    } catch (e) { applyDefaults(); }
+  }
+
+  /* ---------- card dates: statement closes on the 20th, paid in full on the 21st ---------- */
+  var dateFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  function dayDiff(a, b) { return Math.round((b - a) / 86400000); }
+  function cardMessage() {
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var day = today.getDate();
+    if (day === 21) return "Pay your card in full today.";
+    var close = new Date(today.getFullYear(), today.getMonth() + (day > 21 ? 1 : 0), 20);
+    var pay = new Date(close.getFullYear(), close.getMonth(), 21);
+    if (day === 20) return "Statement closes today. Pay it in full tomorrow, " + dateFmt.format(pay) + ".";
+    var n = dayDiff(today, close);
+    return "Statement closes " + dateFmt.format(close) + " (" + n + (n === 1 ? " day" : " days") + "). Pay in full on " + dateFmt.format(pay) + ".";
+  }
+
+  /* ---------- totals ---------- */
+  function update() {
+    var income = num(incomeEl);
+    var total = 0;
+    rows.forEach(function (r) { total += num(r.amtEl); });
+    total = round2(total);
+    var savings = round2(income - total);
+
+    document.getElementById("totalSpend").textContent = fmt.format(total);
+    var s = document.getElementById("savings");
+    s.textContent = fmt.format(savings);
+    s.className = "value " + (savings >= 0 ? "pos" : "neg");
+
+    var pct = income > 0 ? (total / income) * 100 : (total > 0 ? 100 : 0);
+    document.getElementById("barFill").style.width = Math.min(100, pct) + "%";
+    document.getElementById("bar").className = "bar" + (savings < 0 ? " over" : "");
+    document.getElementById("barLabel").textContent = income > 0
+      ? Math.round(pct) + "% of income spent" + (savings < 0 ? " (over budget)" : "")
+      : "Enter your income to see savings";
+
+    var free = round2(num(bankEl) - num(cardEl));
+    var f = document.getElementById("freeCash");
+    f.textContent = fmt.format(free);
+    f.className = "value " + (bankEl.value === "" ? "" : (free >= 0 ? "pos" : "neg"));
+    document.getElementById("cardDates").textContent = cardMessage();
+
+    save();
+  }
+
+  [incomeEl, bankEl, cardEl].forEach(function (el) {
+    el.addEventListener("input", update);
+    el.addEventListener("focus", selectAll);
+  });
+
+  /* ---------- reset: needs a second tap within 4 seconds ---------- */
+  var resetBtn = document.getElementById("resetBtn");
+  var armTimer = null;
+  function disarm() { resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset to starting budget"; armTimer = null; }
+  resetBtn.addEventListener("click", function () {
+    if (!armTimer) {
+      resetBtn.classList.add("armed");
+      resetBtn.textContent = "Tap again to erase your changes";
+      armTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    clearTimeout(armTimer);
+    disarm();
+    applyDefaults();
+    update();
+  });
+
+  /* refresh the dates when the app is reopened */
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) document.getElementById("cardDates").textContent = cardMessage();
+  });
+
+  load();
+  update();
+})();
+</script>
+</body>
+</html>
