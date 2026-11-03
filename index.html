@@ -289,7 +289,7 @@
       <div class="hero-top"><span class="k">Where your money is heading</span><span class="k" id="heroRange"></span></div>
       <div class="chart"><svg id="chart" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"></svg><div class="chart-labels" id="chartLabels"></div></div>
       <div class="tiles">
-        <div class="tile" style="--tc:#38bdf8"><div class="k">Bank now</div><div class="v" id="tToday">$0</div><div class="d">Today</div></div>
+        <div class="tile" style="--tc:#38bdf8"><div class="k">Bank now</div><div class="v" id="tToday">$0</div><div class="d" id="tTodayD">Today</div></div>
         <div class="tile" style="--tc:#fbbf24"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
         <div class="tile" style="--tc:#34d399"><div class="k" id="tEomK">Month end</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
       </div>
@@ -304,7 +304,7 @@
     <details class="card fold">
       <summary><span class="ft">Your money now</span><span class="fs" id="moneySum"></span></summary>
       <div class="row">
-        <label for="bank">Bank today<span class="s">What your account shows</span></label>
+        <label for="bank">Bank today<span class="s" id="bankNote">What your account shows</span></label>
         <div class="field"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
       <div class="row">
@@ -528,6 +528,8 @@
   var bankEl = byId("bank"), cardEl = byId("cardOwed"), usualEl = byId("usualPay");
   var payOv = {};
   var paid = {};
+  var bankAt = Date.now();
+  function isTicked(k) { var v = paid[k]; return v === 1 || !!(v && typeof v === "object"); }
   var openCy = {};
 
   /* every "m" = monthly on a usual day; every "f" = every 14 days from the next date. */
@@ -741,17 +743,31 @@
       var a = round2(numv(b.a));
       if (a <= 0) return;
       if (!hasDate(b)) missing.push(billName(b));
-      billPlan(effBill(b, today), today, H).dates.forEach(function (d) { var key = b.id + "|" + iso(d); slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c, key: key, paid: !!paid[key], src: b.src }); });
+      billPlan(effBill(b, today), today, H).dates.forEach(function (d) {
+        var key = b.id + "|" + iso(d);
+        /* Card bills tick themselves at 8pm on the day they hit the card. */
+        var auto = b.src === "card" && d.getTime() === today.getTime() && now >= new Date(today.getFullYear(), today.getMonth(), today.getDate(), 20, 0);
+        var manual = isTicked(key);
+        slot(d).bills.push({ name: billName(b), a: a, d: d, c: b.c, key: key, paid: paid[key] !== -1 && (manual || auto), auto: auto && !manual, src: b.src });
+      });
     });
     var cardAmt = round2(num(cardEl));
     if (cardAmt > 0) {
       /* Only what is owed on the card now. No guessing future card bills. */
       var due = billPlan({ every: "m", day: 21, next: "" }, today, addDays(today, 40)).dates[0];
       var ckey = "card|" + iso(due);
-      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b", key: ckey, paid: !!paid[ckey], src: "bank" });
+      slot(today).bills.push({ name: "Card owed, due " + shortFmt.format(due), a: cardAmt, d: today, c: "#f59e0b", key: ckey, paid: isTicked(ckey), src: "bank" });
     }
     pays.forEach(function (d) { if (d <= H) { var s = slot(d); s.isPay = true; s.pay = payAmt(d); } });
-    var bal = num(bankEl);
+    /* Bank bills ticked since Bank now was last typed in come off the bank straight away. */
+    var ticked = 0;
+    Object.keys(paid).forEach(function (k) {
+      var v = paid[k];
+      if (!v || typeof v !== "object" || !(v.t > bankAt) || v.src !== "bank") return;
+      ticked += numv(v.a);
+    });
+    ticked = round2(ticked);
+    var bal = num(bankEl) - ticked;
     var start = bal;
     var days = [], idx = {};
     for (var d = today, i = 0; d <= H; d = addDays(d, 1), i++) {
@@ -764,7 +780,7 @@
       idx[iso(d)] = days.length;
       days.push({ d: d, before: before, after: bal, bills: s.bills, billSum: billSum, spent: spent, pay: s.pay, isPay: s.isPay });
     }
-    return { today: today, eom: eom, H: H, pays: pays, days: days, idx: idx, start: start, missing: missing };
+    return { today: today, eom: eom, H: H, pays: pays, days: days, idx: idx, start: start, missing: missing, ticked: ticked };
   }
 
   function setVal(id, v) {
@@ -877,7 +893,8 @@
           tick.setAttribute("aria-pressed", x.paid ? "true" : "false");
           tick.setAttribute("aria-label", (x.paid ? "Mark not paid: " : "Mark paid: ") + x.name);
           tick.addEventListener("click", function () {
-            if (paid[x.key]) delete paid[x.key]; else paid[x.key] = 1;
+            if (x.paid) { if (x.auto) paid[x.key] = -1; else delete paid[x.key]; }
+            else paid[x.key] = { t: Date.now(), a: x.a, src: x.src };
             update();
           });
           row.appendChild(tick);
@@ -925,6 +942,8 @@
     renderBills(today, addDays(today, 400));
 
     setVal("tToday", f.start);
+    byId("tTodayD").textContent = f.ticked > 0 ? "After ticks" : "Today";
+    byId("bankNote").textContent = f.ticked > 0 ? "Ticked bills take off " + fmt.format(f.ticked) + " until you update this" : "What your account shows";
     var p1 = f.pays[0];
     if (p1 && f.idx[iso(p1)] != null) {
       setVal("tPay", f.days[f.idx[iso(p1)]].before);
@@ -954,7 +973,7 @@
         v: 4, tab: curTab,
         payBudget: payBudgetEl.value,
         rows: rows.map(function (r) { return { k: r.key, n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
-        bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid,
+        bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid, bankAt: bankAt,
         bills: BILLS.map(function (b) { return { id: b.id, n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
       }));
     } catch (e) {}
@@ -998,7 +1017,10 @@
         Object.keys(d.payOv).forEach(function (k) { if (parseDate(k)) payOv[k] = String(d.payOv[k]); });
       }
       if (d.paid && typeof d.paid === "object") {
-        Object.keys(d.paid).forEach(function (k) { if (d.paid[k]) paid[k] = 1; });
+        Object.keys(d.paid).forEach(function (k) { var v = d.paid[k]; if (v === -1 || (v && typeof v === "object")) paid[k] = v; else if (v) paid[k] = 1; });
+      }
+      if (typeof d.bankAt === "number") bankAt = d.bankAt;
+      {
       }
       if (Array.isArray(d.bills)) {
         var OLD_IDS = ["rent", "debt", "phone", "net", "swim", "apple", "o1", "o2", "o3", "o4", "o5", "o6"];
@@ -1050,7 +1072,7 @@
   function tidy() {
     var today = startOfDay(new Date());
     Object.keys(payOv).forEach(function (k) { var d = parseDate(k); if (!d || d < today) delete payOv[k]; });
-    Object.keys(paid).forEach(function (k) { var d = parseDate(k.split("|")[1]); if (!d || d < today) delete paid[k]; });
+    Object.keys(paid).forEach(function (k) { var d = parseDate(k.split("|")[1]); if (!d || diffDays(d, today) > 40) delete paid[k]; });
     BILLS.forEach(function (b) {
       var o = parseDate(b.next);
       if (b.every === "m" && o && diffDays(o, today) > 45) b.next = "";
@@ -1063,6 +1085,7 @@
     save();
   }
 
+  bankEl.addEventListener("input", function () { bankAt = Date.now(); });
   [payBudgetEl, bankEl, cardEl, usualEl].forEach(function (e) {
     e.addEventListener("input", update);
     e.addEventListener("focus", selectAll);
