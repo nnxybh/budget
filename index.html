@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
 <style>
-  /* Layout: one phone-width column. Two tabs: Budget (the plan) and Right now (payday, cash, what is due). */
+  /* Layout: one phone-width column. Two tabs: Budget (the plan) and Right now (end-of-month forecast). The tabs do not share numbers. */
   :root {
     --bg: #f3f5f4; --surface: #ffffff; --field: #f3f6f5; --ink: #17211d; --muted: #5d6b65;
     --line: #dde4e0; --accent: #1f6b57; --good: #1a7f4f; --bad: #c63a32; --bar-track: #dde4e0;
@@ -60,6 +60,7 @@
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
   .stat .label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
   .stat .value { font-family: var(--font-display); font-size: 26px; line-height: 1.15; margin-top: 2px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .stat.wide .value { font-size: 34px; }
   .value.pos { color: var(--good); }
   .value.neg { color: var(--bad); }
   .bar { height: 8px; border-radius: 99px; background: var(--bar-track); overflow: hidden; margin-top: 12px; }
@@ -72,6 +73,7 @@
   .row { display: flex; align-items: center; gap: 12px; padding-block: 6px; border-top: 1px solid var(--line); min-height: 60px; }
   h2 + .row, h2 + div > .row:first-child { border-top: 0; }
   .row > label { flex: 1 1 0; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+  .s { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
   .name-input {
     flex: 1 1 0; min-width: 0; height: 48px; font: inherit; font-size: 17px; color: var(--ink);
     background: transparent; border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 0 2px;
@@ -93,25 +95,29 @@
   .income .money { flex-basis: 150px; }
   .income .money input { font-weight: 600; }
   .hint { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
-  .status { margin: 4px 0 8px; font-size: 15px; font-weight: 500; }
 
-  .evt { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 10px; border-top: 1px solid var(--line); }
-  .evt:first-of-type { border-top: 0; }
-  .evt .t { min-width: 0; overflow-wrap: anywhere; }
-  .evt .s { display: block; font-size: 13px; color: var(--muted); }
-  .evt .a { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .evt { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); min-height: 60px; }
+  .evt .t { min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
+  .evt .a { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 17px; }
   .evt.total { font-weight: 600; }
-  .evt.total .a { font-family: var(--font-display); font-size: 20px; }
+  .evt.total .a { font-family: var(--font-display); font-size: 22px; }
 
-  .datein { flex: 0 0 140px; min-width: 0; height: 48px; padding: 0 10px; font: inherit; font-size: 17px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
+  .bill { padding-block: 10px; border-top: 1px solid var(--line); }
+  .bill:first-child { border-top: 0; }
+  .bname { display: block; font-size: 17px; margin-bottom: 6px; }
+  .bill .name-input { display: block; width: 100%; margin-bottom: 6px; }
+  .bline { display: flex; align-items: center; gap: 8px; }
+  .bline .money { flex: 1 1 0; min-width: 0; }
+  .datein { flex: 1 1 0; min-width: 0; height: 48px; padding: 0 10px; font: inherit; font-size: 17px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
   .datein:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-  button.clr { min-height: 48px; min-width: 44px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 22px; cursor: pointer; }
+  button.clr { flex: 0 0 44px; min-height: 48px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 22px; cursor: pointer; }
+
   .reset-wrap { margin-top: 18px; text-align: center; }
   button.ghost { min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer; }
   button.ghost.armed { color: var(--bad); border-color: var(--bad); }
   .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
   noscript p { padding: 16px; color: var(--bad); }
-  @media (max-width: 360px) { .money { flex-basis: 116px; } .stat .value { font-size: 22px; } }
+  @media (max-width: 360px) { .money { flex-basis: 116px; } .stat .value { font-size: 22px; } .stat.wide .value { font-size: 30px; } }
   @media (prefers-reduced-motion: reduce) { .bar > div { transition: none; } }
 </style>
 </head>
@@ -120,7 +126,7 @@
 <div class="wrap">
   <header>
     <h1>Monthly Budget</h1>
-    <p class="sub">Plan your month, then check where you stand today. Numbers are saved on this phone.</p>
+    <p class="sub">Plan your month, then see where you will be. Numbers are saved on this phone.</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Views">
@@ -157,52 +163,42 @@
 
   <div class="panel" id="panel-now" role="tabpanel" aria-labelledby="tab-now" hidden>
     <div class="summary-bar" role="status" aria-live="polite">
-      <div class="summary">
-        <div class="stat"><div class="label">Safe to spend</div><div class="value" id="safeNow">$0</div></div>
-        <div class="stat"><div class="label">Per day to payday</div><div class="value" id="perDay">$0</div></div>
-      </div>
-      <div class="bar-label" id="safeNote"></div>
+      <div class="stat wide"><div class="label" id="endLabel">End of month</div><div class="value" id="endNow">$0</div></div>
+      <div class="bar-label" id="endNote"></div>
     </div>
 
-    <section class="card" aria-labelledby="pay-h">
-      <h2 id="pay-h">Next payday</h2>
-      <p class="status" id="payBanner"></p>
+    <section class="card" aria-labelledby="fc-h">
+      <h2 id="fc-h">How it adds up</h2>
       <div class="row">
-        <label for="payAmt">Pay each fortnight</label>
-        <div class="money"><span>$</span><input id="payAmt" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off"></div>
-      </div>
-      <p class="hint" id="payMonth"></p>
-    </section>
-
-    <section class="card" aria-labelledby="cash-h">
-      <h2 id="cash-h">Your money today</h2>
-      <div class="row">
-        <label for="bank">Bank balance today</label>
+        <label for="bank">Bank today</label>
         <div class="money"><span>$</span><input id="bank" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
       <div class="row">
-        <label for="cardOwed">Spent on card this statement</label>
+        <label for="cardOwed">Minus: card bill so far<span class="s" id="cardWhen"></span></label>
         <div class="money"><span>$</span><input id="cardOwed" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
       </div>
-      <p class="status" id="cardDates"></p>
+      <div class="evt">
+        <div class="t">Plus: pays coming<span class="s" id="paysWhen"></span></div>
+        <div class="a" id="paysAmt">$0</div>
+      </div>
+      <div class="evt">
+        <div class="t">Minus: bills coming<span class="s" id="billsWhen"></span><span class="s" id="billsMissing"></span></div>
+        <div class="a" id="billsAmt">$0</div>
+      </div>
+      <div class="row">
+        <label for="plan">Minus: spending I plan<span class="s">Food, petrol, going out</span></label>
+        <div class="money"><span>$</span><input id="plan" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0"></div>
+      </div>
+      <div class="evt total">
+        <div class="t" id="endLabel2">End of month</div>
+        <div class="a" id="endAmt">$0</div>
+      </div>
     </section>
 
-    <section class="card" aria-labelledby="up-h">
-      <h2 id="up-h">Set aside before payday</h2>
-      <div id="comingUp"></div>
-      <p class="hint">Bills show here once they have a date below. Car insurance and rego are yearly, so your monthly amounts cover them.</p>
-    </section>
-
-    <section class="card" aria-labelledby="bd-h">
-      <h2 id="bd-h">Bill dates</h2>
-      <div id="billDates"></div>
-      <p class="hint">Pick the next date each bill comes out. Bills repeat every month, and swimming every 2 weeks.</p>
-    </section>
-
-    <section class="card" aria-labelledby="fn-h">
-      <h2 id="fn-h">Where each fortnight goes</h2>
-      <div id="fortnightList"></div>
-      <p class="hint">Each budget line shared across 26 pays a year.</p>
+    <section class="card" aria-labelledby="pb-h">
+      <h2 id="pb-h">Pay and bills</h2>
+      <div id="billList"></div>
+      <p class="hint">Pick the next date each one comes out. Bills repeat every month. Pay and swimming repeat every 2 weeks. Bills without a date are not counted.</p>
     </section>
   </div>
 
@@ -213,11 +209,9 @@
 (function () {
   var KEY = "budget-v3";
   var DEFAULT_INCOME = 5995;
-  var DEFAULT_PAY = 2770;
-  var PAY_ANCHOR = new Date(2026, 10, 4);   /* Wed 4 Nov 2026: the night the pay lands, every 14 days */
-  var SWIM_ANCHOR = new Date(2026, 8, 24);  /* Thu 24 Sep 2026: swimming comes out every second Thursday */
-  var APPLE_AMOUNT = 52.95;                 /* Apple subscription, charged to the card about the 5th */
+  var TIMES = String.fromCharCode(215);
 
+  /* ---------- Budget tab ---------- */
   var items = [
     ["Rent", 2600], ["Food", 400], ["Utilities", null], ["Petrol", 200],
     ["Phone", 55], ["Internet", 70], ["Kids' swimming", 104], ["Haircuts", 100],
@@ -232,7 +226,7 @@
   var incomeEl = document.getElementById("income");
   var bankEl = document.getElementById("bank");
   var cardEl = document.getElementById("cardOwed");
-  var payEl = document.getElementById("payAmt");
+  var planEl = document.getElementById("plan");
   var rows = [];
   var uid = 0;
   var curTab = "budget";
@@ -278,20 +272,179 @@
 
   var fmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 0, maximumFractionDigits: 2 });
   var dateFmt = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short" });
-  var monthFmt = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" });
+  var shortFmt = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" });
+  var monthFmt = new Intl.DateTimeFormat("en-AU", { month: "long" });
   function num(el) { var v = parseFloat(el.value); if (!isFinite(v) || v < 0) return 0; return Math.min(v, 1e9); }
   function round2(n) { return Math.round(n * 100) / 100; }
   function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
   function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
   function diffDays(a, b) { return Math.round((b - a) / 86400000); }
   function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
+  function byId(id) { return document.getElementById(id); }
+
+  /* ---------- Right now tab: its own pay and bills list ---------- */
+  /* type "m" repeats monthly on the picked day. Type "f" repeats every 14 days from the picked date. */
+  var ITEMS = [
+    { id: "pay", kind: "pay", name: "Pay", type: "f", a: "2770", d: "2026-11-04" },
+    { id: "rent", kind: "bill", name: "Rent", type: "m", a: "2600", d: "2026-12-01" },
+    { id: "debt", kind: "bill", name: "Debt repayment", type: "m", a: "500", d: "" },
+    { id: "phone", kind: "bill", name: "Phone", type: "m", a: "55", d: "2026-11-06" },
+    { id: "net", kind: "bill", name: "Internet", type: "m", a: "70", d: "2026-11-28" },
+    { id: "swim", kind: "bill", name: "Swimming", type: "f", a: "48", d: "2026-11-05" },
+    { id: "apple", kind: "bill", name: "Apple", type: "m", a: "52.95", d: "2026-11-05" },
+    { id: "o1", kind: "bill", name: "", type: "m", a: "", d: "", other: true },
+    { id: "o2", kind: "bill", name: "", type: "m", a: "", d: "", other: true }
+  ];
+
+  function itemName(it) {
+    if (it.other) { var n = it.nameEl.value.trim(); return n || "Other bill"; }
+    return it.name;
+  }
+  function buildList() {
+    var box = byId("billList");
+    box.textContent = "";
+    ITEMS.forEach(function (it) {
+      var wrap = document.createElement("div");
+      wrap.className = "bill";
+      if (it.other) {
+        var ni = document.createElement("input");
+        ni.type = "text";
+        ni.id = "bn-" + it.id;
+        ni.className = "name-input";
+        ni.placeholder = "Other bill";
+        ni.maxLength = 40;
+        ni.autocomplete = "off";
+        ni.setAttribute("aria-label", "Bill name");
+        ni.addEventListener("input", update);
+        it.nameEl = ni;
+        wrap.appendChild(ni);
+      } else {
+        var lab = document.createElement("label");
+        lab.className = "bname";
+        lab.htmlFor = "ba-" + it.id;
+        lab.textContent = it.name + (it.type === "f" ? " (every 2 weeks)" : "");
+        wrap.appendChild(lab);
+      }
+      var line = document.createElement("div");
+      line.className = "bline";
+      var money = document.createElement("div");
+      money.className = "money";
+      money.innerHTML = '<span>$</span><input id="ba-' + it.id + '" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" autocomplete="off" placeholder="0">';
+      var ai = money.querySelector("input");
+      ai.value = it.a;
+      if (it.other) ai.setAttribute("aria-label", "Amount");
+      ai.addEventListener("input", update);
+      ai.addEventListener("focus", selectAll);
+      it.amtEl = ai;
+      var di = document.createElement("input");
+      di.type = "date";
+      di.id = "bd-" + it.id;
+      di.className = "datein";
+      di.value = it.d;
+      di.setAttribute("aria-label", "Next date for " + (it.other ? "this bill" : it.name));
+      it.dateEl = di;
+      var clr = document.createElement("button");
+      clr.type = "button";
+      clr.className = "clr";
+      clr.textContent = TIMES;
+      clr.setAttribute("aria-label", "Clear the date");
+      clr.hidden = !di.value;
+      it.clrEl = clr;
+      function changed() { clr.hidden = !di.value; update(); }
+      di.addEventListener("input", changed);
+      di.addEventListener("change", changed);
+      clr.addEventListener("click", function () { di.value = ""; changed(); });
+      line.appendChild(money);
+      line.appendChild(di);
+      line.appendChild(clr);
+      wrap.appendChild(line);
+      box.appendChild(wrap);
+    });
+  }
+
+  function parseDate(s) {
+    var p = String(s || "").split("-");
+    if (p.length !== 3) return null;
+    var y = +p[0], m = +p[1], d = +p[2];
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+  /* Dates from "from" to "end" (both included) that this item falls on. */
+  function occurrences(base, type, from, end) {
+    var out = [];
+    if (type === "m") {
+      for (var i = 0; i < 2; i++) {
+        var last = new Date(from.getFullYear(), from.getMonth() + i + 1, 0).getDate();
+        var d = new Date(from.getFullYear(), from.getMonth() + i, Math.min(base.getDate(), last));
+        if (d >= from && d <= end && d >= base) out.push(d);
+      }
+    } else {
+      var k = Math.floor(diffDays(base, from) / 14);
+      for (var j = k; j <= k + 3; j++) {
+        var d2 = addDays(base, j * 14);
+        if (d2 >= from && d2 <= end && d2 >= base) out.push(d2);
+      }
+    }
+    return out;
+  }
+
+  function renderNow() {
+    var today = startOfDay(new Date());
+    var end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    var tomorrow = addDays(today, 1);
+    var month = monthFmt.format(today);
+    var payTotal = 0, billTotal = 0;
+    var pays = [], bills = [], missing = [];
+
+    ITEMS.forEach(function (it) {
+      var a = round2(num(it.amtEl));
+      if (a <= 0) return;
+      var base = parseDate(it.dateEl.value);
+      if (!base) { if (it.kind === "bill") missing.push(itemName(it)); return; }
+      if (it.kind === "pay") {
+        occurrences(base, it.type, today, end).forEach(function (d) { pays.push(d); payTotal += a; });
+      } else {
+        occurrences(base, it.type, tomorrow, end).forEach(function (d) { bills.push({ name: itemName(it), date: d }); billTotal += a; });
+      }
+    });
+    pays.sort(function (x, y) { return x - y; });
+    bills.sort(function (x, y) { return x.date - y.date; });
+    payTotal = round2(payTotal);
+    billTotal = round2(billTotal);
+
+    var cd = today.getDate();
+    var cardDay = new Date(today.getFullYear(), today.getMonth() + (cd > 21 ? 1 : 0), 21);
+    byId("cardWhen").textContent = cd === 21 ? "Pay in full today" : "Pay in full " + dateFmt.format(cardDay);
+    byId("paysAmt").textContent = fmt.format(payTotal);
+    byId("paysWhen").textContent = pays.length
+      ? plural(pays.length, "pay") + ": " + pays.map(function (d) { return shortFmt.format(d); }).join(", ")
+      : "No pays before the end of " + month;
+    byId("billsAmt").textContent = fmt.format(billTotal);
+    byId("billsWhen").textContent = bills.length
+      ? bills.map(function (b) { return b.name + " " + shortFmt.format(b.date); }).join(", ")
+      : "No dated bills left in " + month;
+    byId("billsMissing").textContent = missing.length ? "Not counted, no date: " + missing.join(", ") : "";
+
+    var total = round2(num(bankEl) - num(cardEl) + payTotal - billTotal - num(planEl));
+    var label = "End of " + month;
+    byId("endLabel").textContent = label;
+    byId("endLabel2").textContent = label;
+    byId("endAmt").textContent = fmt.format(total);
+    var ev = byId("endNow");
+    ev.textContent = fmt.format(total);
+    ev.className = "value " + (total >= 0 ? "pos" : "neg");
+    byId("endNote").textContent = bankEl.value === ""
+      ? "Type your bank balance below to see where you will be."
+      : "Forecast for " + dateFmt.format(end) + ", after " + plural(pays.length, "pay") + " and your bills.";
+  }
 
   /* ---------- saving and loading ---------- */
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, pay: payEl.value, tab: curTab, dates: dates,
-        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; })
+        income: incomeEl.value, bank: bankEl.value, card: cardEl.value, plan: planEl.value, tab: curTab,
+        rows: rows.map(function (r) { return { n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
+        items: ITEMS.map(function (it) { return { n: it.nameEl ? it.nameEl.value : "", a: it.amtEl.value, d: it.dateEl.value }; })
       }));
     } catch (e) {}
   }
@@ -302,7 +455,19 @@
       if (r.nameEl) r.nameEl.value = "";
     });
   }
-  function applyAllDefaults() { applyBudgetDefaults(); bankEl.value = ""; cardEl.value = ""; payEl.value = DEFAULT_PAY; }
+  function applyItemDefaults() {
+    ITEMS.forEach(function (it) {
+      it.amtEl.value = it.a;
+      it.dateEl.value = it.d;
+      it.clrEl.hidden = !it.dateEl.value;
+      if (it.nameEl) it.nameEl.value = "";
+    });
+  }
+  function applyAllDefaults() {
+    applyBudgetDefaults();
+    applyItemDefaults();
+    bankEl.value = ""; cardEl.value = ""; planEl.value = "";
+  }
   function load() {
     var raw = null;
     try { raw = localStorage.getItem(KEY); } catch (e) {}
@@ -313,208 +478,22 @@
       incomeEl.value = d.income == null ? DEFAULT_INCOME : d.income;
       bankEl.value = d.bank == null ? "" : d.bank;
       cardEl.value = d.card == null ? "" : d.card;
-      payEl.value = d.pay == null || d.pay === "" ? DEFAULT_PAY : d.pay;
+      planEl.value = d.plan == null ? "" : d.plan;
       curTab = d.tab === "now" ? "now" : "budget";
-      if (d.dates && typeof d.dates === "object") BILLS.forEach(function (b) { if (typeof d.dates[b.id] === "string") dates[b.id] = d.dates[b.id]; });
       d.rows.forEach(function (s, i) {
         rows[i].amtEl.value = s && s.a != null ? s.a : "";
         if (rows[i].nameEl) rows[i].nameEl.value = s && typeof s.n === "string" ? s.n : "";
       });
+      if (Array.isArray(d.items) && d.items.length === ITEMS.length) {
+        d.items.forEach(function (s, i) {
+          var it = ITEMS[i];
+          it.amtEl.value = s && s.a != null ? s.a : "";
+          it.dateEl.value = s && typeof s.d === "string" ? s.d : "";
+          it.clrEl.hidden = !it.dateEl.value;
+          if (it.nameEl) it.nameEl.value = s && typeof s.n === "string" ? s.n : "";
+        });
+      } else { applyItemDefaults(); }
     } catch (e) { applyAllDefaults(); }
-  }
-
-  /* ---------- dates: payday, card statement, bills ---------- */
-  function nextPayday(today) {
-    var d = diffDays(PAY_ANCHOR, today);
-    if (d <= 0) return PAY_ANCHOR;
-    return addDays(PAY_ANCHOR, Math.ceil(d / 14) * 14);
-  }
-  function paydaysInMonth(y, m) {
-    var c = 0;
-    for (var k = -60; k <= 300; k++) {
-      var p = addDays(PAY_ANCHOR, k * 14);
-      if (p.getFullYear() === y && p.getMonth() === m) c++;
-    }
-    return c;
-  }
-  function cardMessage() {
-    var today = startOfDay(new Date());
-    var day = today.getDate();
-    if (day === 21) return "Pay your card in full today.";
-    var close = new Date(today.getFullYear(), today.getMonth() + (day > 21 ? 1 : 0), 20);
-    var pay = new Date(close.getFullYear(), close.getMonth(), 21);
-    if (day === 20) return "Statement closes today. Pay it in full tomorrow, " + dateFmt.format(pay) + ".";
-    var n = diffDays(today, close);
-    return "Statement closes " + dateFmt.format(close) + " (" + plural(n, "day") + "). Pay in full on " + dateFmt.format(pay) + ".";
-  }
-  function rowAmt(i) { return num(rows[i].amtEl); }
-
-  /* Bills. The date picker sets the next due date. Monthly bills repeat on that day, swimming every 14 days.
-     Budget rows: 0 Rent, 2 Utilities, 4 Phone, 5 Internet, 6 Swimming, 10 Debt repayment. */
-  var BILLS = [
-    { id: "rent", name: "Rent", via: "from your bank", type: "m", row: 0, def: "2026-12-01" },
-    { id: "debt", name: "Debt repayment", via: "from your bank", type: "m", row: 10, def: "" },
-    { id: "util", name: "Utilities", via: "from your bank", type: "m", row: 2, def: "" },
-    { id: "phone", name: "Phone", via: "on the card", type: "m", row: 4, def: "2026-11-06" },
-    { id: "net", name: "Internet", via: "on the card", type: "m", row: 5, def: "2026-11-28" },
-    { id: "swim", name: "Swimming", via: "on the card", type: "f", row: 6, def: "2026-11-05" },
-    { id: "apple", name: "Apple", via: "on the card", type: "m", fixed: APPLE_AMOUNT, def: "2026-11-05" }
-  ];
-  var dates = {};
-  BILLS.forEach(function (b) { dates[b.id] = b.def; });
-
-  function parseDate(s) {
-    var p = String(s || "").split("-");
-    if (p.length !== 3) return null;
-    var y = +p[0], m = +p[1], d = +p[2];
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-  }
-  function billAmount(b) {
-    if (b.fixed != null) return b.fixed;
-    return b.type === "f" ? round2(rowAmt(b.row) * 12 / 26) : rowAmt(b.row);
-  }
-  function eventsBefore(today, pay) {
-    var out = [];
-    BILLS.forEach(function (b) {
-      var base = parseDate(dates[b.id]);
-      if (!base) return;
-      if (b.type === "m") {
-        for (var i = 0; i < 3; i++) {
-          var last = new Date(today.getFullYear(), today.getMonth() + i + 1, 0).getDate();
-          var d = new Date(today.getFullYear(), today.getMonth() + i, Math.min(base.getDate(), last));
-          if (d > today && d <= pay && d >= base) out.push({ b: b, date: d });
-        }
-      } else {
-        var k = Math.floor(diffDays(base, today) / 14);
-        for (var j = k; j <= k + 2; j++) {
-          var d2 = addDays(base, j * 14);
-          if (d2 > today && d2 <= pay && d2 >= base) out.push({ b: b, date: d2 });
-        }
-      }
-    });
-    out.sort(function (a, c) { return a.date - c.date; });
-    return out;
-  }
-  function buildBills() {
-    var box = document.getElementById("billDates");
-    box.textContent = "";
-    BILLS.forEach(function (b) {
-      var row = document.createElement("div");
-      row.className = "row";
-      var lab = document.createElement("label");
-      lab.htmlFor = "bd-" + b.id;
-      lab.textContent = b.name;
-      var inp = document.createElement("input");
-      inp.type = "date";
-      inp.id = "bd-" + b.id;
-      inp.className = "datein";
-      inp.value = dates[b.id] || "";
-      var clr = document.createElement("button");
-      clr.type = "button";
-      clr.className = "clr";
-      clr.textContent = "×";
-      clr.setAttribute("aria-label", "Clear the " + b.name + " date");
-      clr.hidden = !inp.value;
-      function changed() { dates[b.id] = inp.value; clr.hidden = !inp.value; update(); }
-      inp.addEventListener("input", changed);
-      inp.addEventListener("change", changed);
-      clr.addEventListener("click", function () { inp.value = ""; changed(); });
-      row.appendChild(lab);
-      row.appendChild(inp);
-      row.appendChild(clr);
-      box.appendChild(row);
-    });
-  }
-
-  function line(parent, title, sub, amount, cls) {
-    var el = document.createElement("div");
-    el.className = "evt" + (cls ? " " + cls : "");
-    var t = document.createElement("div");
-    t.className = "t";
-    t.appendChild(document.createTextNode(title));
-    if (sub) { var s = document.createElement("span"); s.className = "s"; s.textContent = sub; t.appendChild(s); }
-    var a = document.createElement("div");
-    a.className = "a";
-    a.textContent = amount;
-    el.appendChild(t);
-    el.appendChild(a);
-    parent.appendChild(el);
-  }
-
-  function renderNow() {
-    var today = startOfDay(new Date());
-    var pay = nextPayday(today);
-    var days = diffDays(today, pay);
-    var payAmt = num(payEl);
-
-    document.getElementById("payBanner").textContent = days === 0
-      ? fmt.format(payAmt) + " lands tonight, the night before the official payday."
-      : fmt.format(payAmt) + " lands " + dateFmt.format(pay) + " (in " + plural(days, "day") + "), the night before the official payday. Then every 14 days.";
-
-    var cnt = paydaysInMonth(today.getFullYear(), today.getMonth());
-    var msg = "Paydays this month: " + cnt + " (" + fmt.format(cnt * payAmt) + ").";
-    if (cnt !== 3) {
-      for (var i = 1; i <= 36; i++) {
-        var dm = new Date(today.getFullYear(), today.getMonth() + i, 1);
-        if (paydaysInMonth(dm.getFullYear(), dm.getMonth()) === 3) { msg += " Next month with 3 paydays: " + monthFmt.format(dm) + "."; break; }
-      }
-    }
-    document.getElementById("payMonth").textContent = msg;
-    document.getElementById("cardDates").textContent = cardMessage();
-
-    var box = document.getElementById("comingUp");
-    box.textContent = "";
-    var cardOwed = num(cardEl);
-    var setAside = cardOwed;
-    var close = new Date(today.getFullYear(), today.getMonth() + (today.getDate() > 21 ? 1 : 0), 20);
-    var payDay = new Date(close.getFullYear(), close.getMonth(), 21);
-    line(box, "Card bill so far", "Pay in full on " + dateFmt.format(payDay), fmt.format(cardOwed));
-    var evs = eventsBefore(today, pay);
-    var shown = 0;
-    evs.forEach(function (e) {
-      var a = round2(billAmount(e.b));
-      if (a <= 0) return;
-      setAside += a;
-      shown++;
-      line(box, e.b.name, dateFmt.format(e.date) + ", " + e.b.via, fmt.format(a));
-    });
-    if (!shown) line(box, "No dated bills before payday", "", "");
-    setAside = round2(setAside);
-    line(box, "Total set aside", "", fmt.format(setAside), "total");
-
-    var hasBank = bankEl.value !== "";
-    var safe = round2(num(bankEl) - setAside);
-    var s = document.getElementById("safeNow");
-    var pd = document.getElementById("perDay");
-    if (!hasBank) {
-      s.textContent = "$0"; s.className = "value";
-      pd.textContent = "$0"; pd.className = "value";
-      document.getElementById("safeNote").textContent = "Enter your bank balance to see what is safe to spend.";
-    } else {
-      s.textContent = fmt.format(safe);
-      s.className = "value " + (safe >= 0 ? "pos" : "neg");
-      var per = days > 0 ? round2(safe / days) : safe;
-      pd.textContent = days > 0 ? fmt.format(per) : "Payday";
-      pd.className = "value " + (safe >= 0 ? "" : "neg");
-      document.getElementById("safeNote").textContent = "Bank balance minus the card bill and bills due before payday.";
-    }
-
-    var fl = document.getElementById("fortnightList");
-    fl.textContent = "";
-    var tot = 0;
-    rows.forEach(function (r) {
-      var a = num(r.amtEl);
-      if (a <= 0) return;
-      var nm = r.nameEl ? (r.nameEl.value.trim() || "Other") : r.name;
-      var f = a * 12 / 26;
-      tot += f;
-      line(fl, nm, "", fmt.format(round2(f)));
-    });
-    tot = round2(tot);
-    line(fl, "Total spending", "", fmt.format(tot), "total");
-    var saved = round2(payAmt - tot);
-    line(fl, "Saved each fortnight", "", fmt.format(saved), "total");
   }
 
   /* ---------- totals on the Budget tab ---------- */
@@ -525,15 +504,15 @@
     total = round2(total);
     var savings = round2(income - total);
 
-    document.getElementById("totalSpend").textContent = fmt.format(total);
-    var s = document.getElementById("savings");
+    byId("totalSpend").textContent = fmt.format(total);
+    var s = byId("savings");
     s.textContent = fmt.format(savings);
     s.className = "value " + (savings >= 0 ? "pos" : "neg");
 
     var pct = income > 0 ? (total / income) * 100 : (total > 0 ? 100 : 0);
-    document.getElementById("barFill").style.width = Math.min(100, pct) + "%";
-    document.getElementById("bar").className = "bar" + (savings < 0 ? " over" : "");
-    document.getElementById("barLabel").textContent = income > 0
+    byId("barFill").style.width = Math.min(100, pct) + "%";
+    byId("bar").className = "bar" + (savings < 0 ? " over" : "");
+    byId("barLabel").textContent = income > 0
       ? Math.round(pct) + "% of income spent" + (savings < 0 ? " (over budget)" : "")
       : "Enter your income to see savings";
 
@@ -541,7 +520,7 @@
     save();
   }
 
-  [incomeEl, bankEl, cardEl, payEl].forEach(function (el) {
+  [incomeEl, bankEl, cardEl, planEl].forEach(function (el) {
     el.addEventListener("input", update);
     el.addEventListener("focus", selectAll);
   });
@@ -550,19 +529,19 @@
   function showTab(which) {
     curTab = which === "now" ? "now" : "budget";
     var isNow = curTab === "now";
-    document.getElementById("tab-budget").setAttribute("aria-selected", isNow ? "false" : "true");
-    document.getElementById("tab-now").setAttribute("aria-selected", isNow ? "true" : "false");
-    document.getElementById("panel-budget").hidden = isNow;
-    document.getElementById("panel-now").hidden = !isNow;
+    byId("tab-budget").setAttribute("aria-selected", isNow ? "false" : "true");
+    byId("tab-now").setAttribute("aria-selected", isNow ? "true" : "false");
+    byId("panel-budget").hidden = isNow;
+    byId("panel-now").hidden = !isNow;
     if (isNow) renderNow();
     save();
     try { window.scrollTo(0, 0); } catch (e) {}
   }
-  document.getElementById("tab-budget").addEventListener("click", function () { showTab("budget"); });
-  document.getElementById("tab-now").addEventListener("click", function () { showTab("now"); });
+  byId("tab-budget").addEventListener("click", function () { showTab("budget"); });
+  byId("tab-now").addEventListener("click", function () { showTab("now"); });
 
   /* ---------- reset the budget lines: needs a second tap within 4 seconds ---------- */
-  var resetBtn = document.getElementById("resetBtn");
+  var resetBtn = byId("resetBtn");
   var armTimer = null;
   function disarm() { resetBtn.classList.remove("armed"); resetBtn.textContent = "Reset budget to starting numbers"; armTimer = null; }
   resetBtn.addEventListener("click", function () {
@@ -580,8 +559,8 @@
 
   document.addEventListener("visibilitychange", function () { if (!document.hidden) renderNow(); });
 
+  buildList();
   load();
-  buildBills();
   update();
   showTab(curTab);
 })();
