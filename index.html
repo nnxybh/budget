@@ -241,6 +241,61 @@
   noscript p { padding: 16px; color: var(--bad); }
   @media (max-width: 370px) { :root { --in-w: 146px; } .field { padding: 0 10px; } }
   @media (prefers-reduced-motion: reduce) { .hbar > div { transition: none; } }
+  /* ---- redesign: headline, plain-English fortnights, motion, Ask ---- */
+  .headline .k { opacity: 0.8; }
+  .hv { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 12vw, 52px); line-height: 1.05; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .hv.neg { color: var(--hero-bad); }
+  .hs { font-size: 15px; opacity: 0.85; margin-top: 4px; }
+  .headline + .hero-top { margin-top: 16px; }
+  .cy-sub { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .cy-say { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--muted); }
+  .cy-say b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cy-say b.pos { color: var(--good); }
+  .cy-say b.out { color: var(--bad); }
+  .delta { display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+  .delta.neg { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes pulse { 50% { opacity: 0.45; } }
+  .rise { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .panel:not([hidden]) { animation: fadeIn 0.25s ease; }
+  .cy details[open] > .bl, .cy details[open] > .hint, .bill[open] > .bbody, .fold[open] > :not(summary) { animation: fadeDown 0.22s ease both; }
+  .tick { transition: background 0.2s, border-color 0.2s, transform 0.15s; }
+  .tick:active, .seg button:active, .tabs button:active, .ask-fab:active { transform: scale(0.94); }
+  .wrap { padding-bottom: 72px; }
+  .ask-fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); z-index: 20; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px 0 18px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--hero1), var(--hero2)); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 26px -10px rgba(67, 56, 202, 0.8); transition: transform 0.15s; animation: rise 0.5s 0.3s both; }
+  .ask-fab::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #fde68a; box-shadow: 0 0 0 4px rgba(253, 230, 138, 0.25); }
+  body.noscroll { overflow: hidden; }
+  .sheet { position: fixed; inset: 0; z-index: 40; }
+  .sheet[hidden] { display: none; }
+  .sheet-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); animation: fadeIn 0.2s ease; }
+  .sheet-card { position: absolute; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto; max-height: 88vh; display: flex; flex-direction: column; background: var(--bg); border-radius: 22px 22px 0 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom, 0px)); animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .sheet-head { display: flex; align-items: center; gap: 8px; }
+  .sheet-head h2 { flex: 1; margin: 0; font-family: var(--font-display); font-size: 20px; }
+  button.sm { min-height: 36px; padding: 0 12px; font-size: 14px; }
+  .x { min-height: 36px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 15px; cursor: pointer; }
+  .ask-setup p { margin: 10px 0; font-size: 15px; }
+  .ask-row { display: flex; gap: 8px; margin-top: 10px; }
+  .keyin, .ask-form input { flex: 1; min-width: 0; width: 100%; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; font-size: 16px; }
+  .keyin:focus, .ask-form input:focus { outline: none; border-color: var(--accent); }
+  .pri { height: 48px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 700; cursor: pointer; }
+  .ask-chat { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .ask-chat[hidden] { display: none; }
+  .ask-msgs { flex: 1; min-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .msg { max-width: 86%; padding: 10px 14px; border-radius: 16px; font-size: 16px; line-height: 1.45; white-space: pre-wrap; animation: rise 0.3s ease both; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 6px; }
+  .msg.assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+  .msg.thinking { color: var(--muted); animation: pulse 1.2s ease infinite; }
+  .msg.err { color: var(--bad); }
+  .ask-sugs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+  .ask-sugs button { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+  .ask-form { display: flex; gap: 8px; }
+  #syncFold .keyin { margin-top: 4px; }
+  .warnline { color: var(--warn); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
 </style>
 </head>
 <body>
@@ -304,11 +359,11 @@
   <!-- ===== Right now tab ===== -->
   <div class="panel" id="panel-now" role="tabpanel" aria-labelledby="tab-now" hidden>
     <section class="hero" role="status" aria-live="polite">
-      <div class="hero-top"><span class="k">Where your money is heading</span><span class="k" id="heroRange"></span></div>
+      <div class="headline"><span class="k">Free to spend</span><div class="hv" id="hv">$0</div><div class="hs" id="hs"></div></div>
+      <div class="hero-top"><span class="k">Your bank, day by day</span><span class="k" id="heroRange"></span></div>
       <div class="chart"><svg id="chart" viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"></svg><div class="chart-labels" id="chartLabels"></div></div>
-      <div class="tiles">
+      <div class="tiles two">
         <div class="tile" style="--tc:#38bdf8"><div class="k">Bank now</div><div class="v" id="tToday">$0</div><div class="d" id="tTodayD">Today</div></div>
-        <div class="tile" style="--tc:#fbbf24"><div class="k">Before pay</div><div class="v" id="tPay">$0</div><div class="d" id="tPayD"></div></div>
         <div class="tile" style="--tc:#34d399"><div class="k" id="tEomK">Month end</div><div class="v" id="tEom">$0</div><div class="d" id="tEomD"></div></div>
       </div>
       <div class="hero-warn" id="heroWarn"></div>
@@ -347,10 +402,49 @@
       <div id="billList"></div>
       <p class="hint">Tap a bill to change it. Paying late or early? Change the next date just for this time.</p>
     </details>
+
+    <details class="card fold" id="syncFold">
+      <summary><span class="ft">Sync devices</span><span class="fs" id="syncSum">Off</span></summary>
+      <div id="syncSetup">
+        <p class="hint">Keep your phone and computer in step. Paste a GitHub token that can only use Gists. It stays on this device and is never put in the app's code.</p>
+        <input type="password" id="ghTok" class="keyin" placeholder="ghp_..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="GitHub token">
+        <div class="ask-row"><button type="button" class="pri" id="ghConnect">Connect</button></div>
+        <p class="hint">Connect on the device with your real numbers first. Other devices then copy from it.</p>
+      </div>
+      <div id="syncOn" hidden>
+        <p class="hint" id="syncMsg"></p>
+        <div class="ask-row"><button type="button" class="pri" id="ghNow">Sync now</button><button type="button" class="ghost sm" id="ghOff">Turn off on this device</button></div>
+      </div>
+    </details>
+
   </div>
 
   <p class="foot">Amounts in AUD. Saved only on this phone.</p>
 </div>
+
+  <button type="button" class="ask-fab" id="askBtn" aria-label="Ask Claude about your money">Ask</button>
+  <div class="sheet" id="askSheet" hidden>
+    <div class="sheet-bg" id="askBg"></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="askTitle">
+      <div class="sheet-head">
+        <h2 id="askTitle">Ask about your money</h2>
+        <button type="button" class="ghost sm" id="askKeyBtn">Key</button>
+        <button type="button" class="x" id="askClose">Close</button>
+      </div>
+      <div class="ask-setup" id="askSetup" hidden>
+        <p>Paste your Claude API key. It is saved on this phone only and is never put on GitHub.</p>
+        <input type="password" id="askKey" class="keyin" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Claude API key">
+        <div class="ask-row"><button type="button" class="pri" id="askSave">Save key</button><button type="button" class="ghost sm" id="askForget">Remove key</button></div>
+        <p class="hint">Make a key at platform.claude.com, under API keys.</p>
+      </div>
+      <div class="ask-chat" id="askChat">
+        <div class="ask-msgs" id="askMsgs"><div class="msg assistant">Hi! Ask me anything about your money. I can see your bank, bills, pays and budget.</div></div>
+        <div class="ask-sugs" id="askSugs"></div>
+        <form class="ask-form" id="askForm"><input id="askIn" type="text" placeholder="Ask a question" autocomplete="off" enterkeyhint="send" aria-label="Your question"><button type="submit" class="pri">Send</button></form>
+      </div>
+    </div>
+  </div>
+
 
 <script>
 (function () {
@@ -501,10 +595,10 @@
     byId("bCostD").textContent = isM ? "Per month" : "Per pay";
     byId("bLeftD").textContent = isM ? "Per month" : "Per pay";
     byId("grp-h").textContent = isM ? "Where each month goes" : "Where each pay goes";
-    byId("bPay").textContent = fmt0.format(income);
-    byId("bCost").textContent = fmt0.format(Math.round(perPay));
+    countTo(byId("bPay"), income);
+    countTo(byId("bCost"), perPay);
     var lv = byId("bLeft");
-    lv.textContent = fmt0.format(Math.round(left));
+    countTo(lv, left);
     lv.className = "v" + (left < 0 ? " neg" : "");
 
     var base = Math.max(income, perPay) || 1;
@@ -550,6 +644,7 @@
     var cnt = {}, first = {};
     payDates(from, to).forEach(function (d) { var k = d.getFullYear() * 12 + d.getMonth(); cnt[k] = (cnt[k] || 0) + 1; if (!first[k]) first[k] = d; });
     var three = Object.keys(cnt).filter(function (k) { return cnt[k] >= 3; }).map(function (k) { return monYr.format(first[k]); });
+    lastBudget = { pay: pay, monthly: monthly, sums: sums, three: three };
     byId("payHint").textContent = "Most months have 2 pays, so " + fmt0.format(2 * pay) + " comes in." +
       (three.length ? " These months have 3 pays and an extra " + fmt0.format(pay) + ": " + three.join(", ") + "." : "");
   }
@@ -835,9 +930,27 @@
     return { today: today, eom: eom, H: H, pays: pays, days: days, idx: idx, start: start, missing: missing, ticked: ticked };
   }
 
+  var reduceMotion = false;
+  try { reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+  /* Numbers glide to their new value instead of jumping. */
+  function countTo(e, v) {
+    var to = Math.round(v);
+    var from = e.dataset.v != null && e.dataset.v !== "" ? +e.dataset.v : to;
+    e.dataset.v = to;
+    if (e._raf) cancelAnimationFrame(e._raf);
+    if (reduceMotion || from === to || typeof requestAnimationFrame !== "function") { e.textContent = fmt0.format(to); return; }
+    var t0 = null;
+    function step(t) {
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / 450), q = 1 - Math.pow(1 - p, 3);
+      e.textContent = fmt0.format(Math.round(from + (to - from) * q));
+      if (p < 1) e._raf = requestAnimationFrame(step);
+    }
+    e._raf = requestAnimationFrame(step);
+  }
   function setVal(id, v) {
     var e = byId(id);
-    e.textContent = fmt0.format(Math.round(v));
+    countTo(e, v);
     e.className = "v" + (v < 0 ? " neg" : "");
   }
 
@@ -889,9 +1002,12 @@
     return ln;
   }
 
+  var firstCy = true, prevCy = {}, lastCycles = [], lastF = null, lastBudget = null;
   function renderCycles(f) {
     var box = byId("cycles");
     box.textContent = "";
+    lastCycles = [];
+    setTimeout(function () { firstCy = false; }, 0);
     var today = f.today;
     var next = f.pays;
     var segs = [];
@@ -914,23 +1030,39 @@
         f.days[i].bills.forEach(function (x) { if (!x.paid) out += x.a; list.push(x); });
       }
       var end = f.days[b].before;
-      var c = el("div", "cy");
+      var lastDay = addDays(sg.to, -1);
+      var range = (k === 0 ? "now" : dayFmt.format(sg.from)) + " to " + dayFmt.format(lastDay);
+      lastCycles.push({ chip: sg.chip, range: range, start: start, inn: inn, out: out, end: end, list: list });
+      if (k === 0) {
+        setVal("hv", end);
+        byId("hv").className = "hv" + (end < 0 ? " neg" : "");
+        byId("hs").textContent = (end < 0 ? "Short " : "Left ") + "until " + dayFmt.format(lastDay) + ", after your bills and card";
+      }
+      var c = el("div", "cy" + (firstCy ? " rise" : ""));
       c.style.setProperty("--cy", sg.c);
+      if (firstCy) c.style.animationDelay = (k * 90) + "ms";
       var head = el("div", "cy-head");
       head.appendChild(el("span", sg.cls, sg.chip));
-      head.appendChild(el("span", "cy-dates", (k === 0 ? "Today" : "Pay " + dayFmt.format(sg.from)) + " to " + dayFmt.format(addDays(sg.to, -1))));
       c.appendChild(head);
       var big = el("div", "cy-big");
-      big.appendChild(el("span", "k", "Left on " + dayFmt.format(addDays(sg.to, -1))));
-      var n = el("span", "num " + (end < 0 ? "amt bad" : "amt good"), fmt0.format(Math.round(end)));
+      big.appendChild(el("span", "k", "Left by " + dayFmt.format(lastDay)));
+      var n = el("span", "num " + (end < 0 ? "amt bad" : "amt good"));
+      if (prevCy[sg.chip] != null) n.dataset.v = prevCy[sg.chip];
+      countTo(n, end);
+      prevCy[sg.chip] = Math.round(end);
       big.appendChild(n);
       c.appendChild(big);
-      var flow = el("div", "cy-flow");
-      function cell(label, val, cls) { var d = el("div"); d.appendChild(el("span", "", label)); d.appendChild(el("b", cls || "", val)); flow.appendChild(d); }
-      cell(k === 0 ? "Bank now" : "Start", fmt0.format(Math.round(start)));
-      cell("Pay in", "+" + fmt0.format(Math.round(inn)), "amt good");
-      cell("Bills out", "-" + fmt0.format(Math.round(out)), "amt bad");
-      c.appendChild(flow);
+      c.appendChild(el("div", "cy-sub", k === 0 ? "From now until " + dayFmt.format(lastDay) : "Starts with your " + dayFmt.format(sg.from) + " pay, lasts until " + dayFmt.format(lastDay)));
+      var say = el("p", "cy-say");
+      function put(t, cls) { if (cls == null) say.appendChild(document.createTextNode(t)); else say.appendChild(el("b", cls, t)); }
+      put(k === 0 ? "You have " : "You start with ");
+      put(fmt0.format(Math.round(start)), "");
+      if (inn > 0) { put(", your pay of "); put(fmt0.format(Math.round(inn)), "pos"); put(" comes in"); }
+      else put(", no pay comes in");
+      put(", and "); put(fmt0.format(Math.round(out)), "out"); put(" of bills go out.");
+      c.appendChild(say);
+      var ch = inn - out;
+      if (inn > 0) c.appendChild(el("span", "delta" + (ch < 0 ? " neg" : ""), (ch < 0 ? "Down " : "Up ") + fmt0.format(Math.abs(Math.round(ch))) + " this fortnight"));
       if (list.length) {
         var det = el("details");
         var openKey = sg.chip;
@@ -1013,16 +1145,14 @@
     byId("tTodayD").textContent = f.ticked > 0 ? "After ticks" : "Today";
     byId("bankNote").textContent = f.ticked > 0 ? "Ticked bills take off " + fmt.format(f.ticked) + " until you update this" : "What your account shows";
     var p1 = f.pays[0];
-    if (p1 && f.idx[iso(p1)] != null) {
-      setVal("tPay", f.days[f.idx[iso(p1)]].before);
-      byId("tPayD").textContent = diffDays(today, p1) === 0 ? "Tonight" : dayFmt.format(p1);
-    }
+
     byId("moneySum").textContent = "Bank " + fmt0.format(num(bankEl));
     byId("paySum").textContent = p1 ? fmt0.format(payAmt(p1)) + (diffDays(today, p1) === 0 ? " tonight" : " on " + shortFmt.format(p1)) : "";
     var nb = 0;
     BILLS.forEach(function (b) { if (numv(b.a) > 0) nb++; });
     byId("billSum").textContent = nb + (nb === 1 ? " bill" : " bills") + (f.missing.length ? ", " + f.missing.length + (f.missing.length === 1 ? " needs" : " need") + " a date" : "");
     byId("tEomK").textContent = "On " + shortFmt.format(f.eom);
+    lastF = f;
     setVal("tEom", f.days[f.idx[iso(f.eom)]].after);
     byId("tEomD").textContent = "Month end";
     var warn = [];
@@ -1035,15 +1165,24 @@
   }
 
   /* ================= saving and loading ================= */
+  var savedAt = 0, lastBody = null;
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({
+      var o = ({
         v: 4, tab: curTab, bView: bView,
         payBudget: payBudgetEl.value,
         rows: rows.map(function (r) { return { k: r.key, n: r.nameEl ? r.nameEl.value : null, a: r.amtEl.value }; }),
         bank: bankEl.value, card: cardEl.value, usualPay: usualEl.value, payOv: payOv, paid: paid, bankAt: bankAt,
         bills: BILLS.map(function (b) { return { id: b.id, src: b.src, n: b.n || "", a: b.a, every: b.every, day: b.day || 0, next: b.next || "" }; })
-      }));
+      });
+      /* savedAt only moves when something really changed, so sync can tell which copy is newer. */
+      var body = JSON.stringify(o);
+      if (body !== lastBody) {
+        if (syncReady) { savedAt = Date.now(); if (lastBody !== null) schedulePush(); }
+        lastBody = body;
+      }
+      o.savedAt = savedAt;
+      localStorage.setItem(KEY, JSON.stringify(o));
     } catch (e) {}
   }
   function budgetDefaults() {
@@ -1065,6 +1204,7 @@
     var d;
     try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d !== "object") return;
+    savedAt = typeof d.savedAt === "number" ? d.savedAt : 0;
     curTab = d.tab === "budget" ? "budget" : "now";
     if (d.bView === "month") bView = "month";
     if (d.payBudget != null && d.payBudget !== "") payBudgetEl.value = d.payBudget;
@@ -1205,8 +1345,241 @@
     update();
   });
 
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { tidy(); update(); } });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { tidy(); update(); if (syncReady) pull(false); } });
   setInterval(function () { if (!document.hidden) renderNow(); }, 60000);
+
+
+  /* ================= Ask Claude ================= */
+  /* The API key is typed in on this phone and saved only here. It is never in the code on GitHub. */
+  var AI_KEY = "budget-ai-key";
+  var AI_MODEL = "claude-haiku-5-5";
+  var NL = String.fromCharCode(10);
+  var chat = [];
+  function getKey() { try { return localStorage.getItem(AI_KEY) || ""; } catch (e) { return ""; } }
+  function setKey(k) { try { if (k) localStorage.setItem(AI_KEY, k); else localStorage.removeItem(AI_KEY); } catch (e) {} }
+  function money(n) { return "A" + fmt.format(round2(n)); }
+
+  function aiContext() {
+    var L = [];
+    var now = new Date();
+    L.push("Today: " + longFmt.format(now) + ", " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + " Melbourne time.");
+    L.push("Bank now (after any ticked bank bills): " + money(lastF ? lastF.start : num(bankEl)) + ".");
+    L.push("Card owed so far: " + money(num(cardEl)) + ". It is paid from the bank on the 21st, but the app takes it off straight away as money already spent. New card spending lowers what is left until the user adds it to Card owed.");
+    L.push("Pay: usually " + money(num(usualEl)) + " every 2 weeks. It lands in the bank on Wednesday night about 11:30pm.");
+    if (lastF) L.push("Upcoming pays: " + lastF.pays.slice(0, 4).map(function (d) { return dayFmt.format(d) + " " + money(payAmt(d)); }).join("; ") + ".");
+    lastCycles.forEach(function (c) {
+      L.push(c.chip + " (" + c.range + "): starts with " + money(c.start) + ", pay in " + money(c.inn) + ", bills out " + money(c.out) + ", left at the end " + money(c.end) + ".");
+      if (c.list.length) L.push("  Bills: " + c.list.map(function (x) { return x.name + " " + shortFmt.format(x.d) + " " + money(x.a) + " (" + (x.src === "card" ? "card" : "bank") + (x.paid ? ", already paid" : "") + ")"; }).join("; ") + ".");
+    });
+    if (lastF) L.push("Bank on " + dayFmt.format(lastF.eom) + " (month end): " + money(lastF.days[lastF.idx[iso(lastF.eom)]].after) + ".");
+    if (lastBudget) {
+      var b = lastBudget;
+      L.push("Budget plan: pay " + money(b.pay) + " a fortnight. Monthly costs " + money(b.monthly) + " (" + money(b.monthly * 12 / 26) + " per pay). Left per pay " + money(b.pay - b.monthly * 12 / 26) + ". Left in a normal 2-pay month " + money(2 * b.pay - b.monthly) + "." + (b.three.length ? " Months with 3 pays: " + b.three.join(", ") + "." : ""));
+      L.push("Budget by category each month: " + Object.keys(b.sums).filter(function (g) { return b.sums[g] > 0; }).map(function (g) { return GROUPS[g].name + " " + money(b.sums[g]); }).join("; ") + ".");
+    }
+    return L.join(NL);
+  }
+
+  var SYS = "You are a friendly money helper inside a personal budget app for someone in Melbourne, Australia. " +
+    "Use only the numbers given below. All amounts are Australian dollars: always write them like A$1,050. " +
+    "Answer in plain, simple words, like a friend: 2 to 5 short sentences, or a very short list. No headings, no tables. " +
+    "When asked if something is affordable, compare it with what is left this fortnight and say what it does to the later fortnights. " +
+    "Remember card spending is taken off straight away. Do not give investment, tax or legal advice. If something is not in the data, say so.";
+
+  function addMsg(role, text) {
+    var m = el("div", "msg " + role, text);
+    byId("askMsgs").appendChild(m);
+    try { m.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" }); } catch (e) {}
+    return m;
+  }
+  function renderSugs() {
+    var box = byId("askSugs");
+    box.textContent = "";
+    if (chat.length) return;
+    ["Explain this fortnight simply", "Can I afford A$200 this weekend?", "Where does most of my money go?"].forEach(function (q) {
+      var b = el("button", "", q);
+      b.type = "button";
+      b.addEventListener("click", function () { ask(q); });
+      box.appendChild(b);
+    });
+  }
+  function showSetup(on) {
+    byId("askSetup").hidden = !on;
+    byId("askChat").hidden = on;
+    if (on) { byId("askKey").value = ""; byId("askForget").hidden = !getKey(); }
+  }
+  function openAsk() {
+    byId("askSheet").hidden = false;
+    document.body.classList.add("noscroll");
+    showSetup(!getKey());
+    renderSugs();
+  }
+  function closeAsk() {
+    byId("askSheet").hidden = true;
+    document.body.classList.remove("noscroll");
+  }
+  var busy = false;
+  function ask(q) {
+    q = String(q || "").trim();
+    if (!q || busy) return;
+    var key = getKey();
+    if (!key) { showSetup(true); return; }
+    busy = true;
+    byId("askSugs").textContent = "";
+    chat.push({ role: "user", content: q });
+    addMsg("user", q);
+    var wait = addMsg("assistant thinking", "Thinking...");
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: 600, system: SYS + NL + NL + "THE USER'S NUMBERS RIGHT NOW:" + NL + aiContext(), messages: chat.slice(-10) })
+    }).then(function (res) {
+      return res.json().then(function (j) { return { ok: res.ok, status: res.status, j: j }; });
+    }).then(function (o) {
+      wait.remove();
+      if (!o.ok) {
+        chat.pop();
+        var why = o.status === 401 ? "That key did not work. Tap Key to check it." :
+          o.status === 429 ? "Too many questions at once. Try again in a minute." :
+          (o.j && o.j.error && o.j.error.message) || "Something went wrong. Try again.";
+        addMsg("assistant err", why);
+        return;
+      }
+      var text = (o.j.content || []).filter(function (c) { return c.type === "text"; }).map(function (c) { return c.text; }).join(NL).split("**").join("").trim();
+      chat.push({ role: "assistant", content: text });
+      addMsg("assistant", text);
+    }).catch(function () {
+      wait.remove();
+      chat.pop();
+      addMsg("assistant err", "Could not reach Claude. Check your internet and try again.");
+    }).then(function () { busy = false; });
+  }
+  byId("askBtn").addEventListener("click", openAsk);
+  byId("askClose").addEventListener("click", closeAsk);
+  byId("askBg").addEventListener("click", closeAsk);
+  byId("askKeyBtn").addEventListener("click", function () { showSetup(byId("askSetup").hidden); });
+  byId("askSave").addEventListener("click", function () {
+    var k = byId("askKey").value.trim();
+    if (!k) return;
+    setKey(k);
+    showSetup(false);
+    renderSugs();
+  });
+  byId("askForget").addEventListener("click", function () { setKey(""); showSetup(true); });
+  byId("askForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var i = byId("askIn");
+    var q = i.value;
+    i.value = "";
+    ask(q);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !byId("askSheet").hidden) closeAsk(); });
+
+
+  /* ================= Sync devices (private GitHub Gist) ================= */
+  /* The token is saved on this device only. Newest change wins. */
+  var GH_TOK = "budget-gh-token", GH_GIST = "budget-gh-gist", GH_FILE = "budget-data.json", GH_DESC = "Budget app sync";
+  function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+  var syncReady = !(lsGet(GH_TOK) && lsGet(GH_GIST));
+  var pushTimer = null, lastSync = 0;
+  var timeFmt = new Intl.DateTimeFormat("en-AU", { hour: "numeric", minute: "2-digit" });
+  function gh(method, path, body) {
+    return fetch("https://api.github.com" + path, {
+      method: method, cache: "no-store",
+      headers: { "Authorization": "Bearer " + lsGet(GH_TOK), "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (res) {
+      if (!res.ok) { var e = new Error("GitHub " + res.status); e.status = res.status; throw e; }
+      return res.json();
+    });
+  }
+  function syncUI(msg) {
+    var on = !!(lsGet(GH_TOK) && lsGet(GH_GIST));
+    byId("syncSetup").hidden = on;
+    byId("syncOn").hidden = !on;
+    byId("syncSum").textContent = on ? (lastSync ? "Synced " + timeFmt.format(new Date(lastSync)) : "On") : "Off";
+    if (msg != null) byId("syncMsg").textContent = msg;
+    else if (on) byId("syncMsg").textContent = lastSync ? "Up to date. Last synced at " + timeFmt.format(new Date(lastSync)) + "." : "Sync is on.";
+  }
+  function failMsg(e) {
+    return e && e.status === 401 ? "GitHub did not accept the token. Turn sync off and connect again with a new token." :
+      "Could not reach GitHub. It will try again next time you open the app.";
+  }
+  function push() {
+    if (!lsGet(GH_TOK) || !lsGet(GH_GIST)) return Promise.resolve();
+    var files = {};
+    files[GH_FILE] = { content: lsGet(KEY) };
+    return gh("PATCH", "/gists/" + lsGet(GH_GIST), { files: files }).then(function () { lastSync = Date.now(); syncUI(); }, function (e) { syncUI(failMsg(e)); });
+  }
+  function schedulePush() {
+    if (!lsGet(GH_TOK) || !lsGet(GH_GIST)) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 1500);
+  }
+  /* Take the GitHub copy if it is newer; send ours if ours is newer. */
+  function pull(force) {
+    if (!lsGet(GH_TOK) || !lsGet(GH_GIST)) return Promise.resolve();
+    syncUI("Checking GitHub...");
+    return gh("GET", "/gists/" + lsGet(GH_GIST)).then(function (g) {
+      var f = g.files && g.files[GH_FILE];
+      var remote = null;
+      try { remote = f ? JSON.parse(f.content) : null; } catch (e) {}
+      var rAt = remote && remote.savedAt ? remote.savedAt : 0;
+      if (remote && (force || rAt > savedAt)) {
+        lsSet(KEY, f.content);
+        location.reload();
+        return;
+      }
+      lastSync = Date.now();
+      if (savedAt > rAt) return push();
+      syncUI();
+    }, function (e) { syncUI(failMsg(e)); });
+  }
+  function connect() {
+    var tok = byId("ghTok").value.trim();
+    if (!tok) return;
+    lsSet(GH_TOK, tok);
+    byId("syncSetup").hidden = true;
+    byId("syncOn").hidden = false;
+    syncUI("Connecting...");
+    gh("GET", "/gists?per_page=100").then(function (list) {
+      var found = null;
+      (list || []).forEach(function (g) { if (!found && g.description === GH_DESC && g.files && g.files[GH_FILE]) found = g; });
+      if (found) {
+        /* Another device already saved: copy its numbers onto this one. */
+        lsSet(GH_GIST, found.id);
+        return pull(true);
+      }
+      var files = {};
+      files[GH_FILE] = { content: lsGet(KEY) };
+      return gh("POST", "/gists", { description: GH_DESC, public: false, files: files }).then(function (g) {
+        lsSet(GH_GIST, g.id);
+        lastSync = Date.now();
+        syncReady = true;
+        syncUI();
+      });
+    }).catch(function (e) {
+      lsSet(GH_TOK, ""); lsSet(GH_GIST, "");
+      syncUI();
+      byId("syncMsg").textContent = "";
+      byId("ghTok").value = "";
+      alertSync(e);
+    });
+  }
+  function alertSync(e) {
+    var p = byId("syncSetup").querySelector(".hint");
+    p.textContent = e && e.status === 401 ? "GitHub did not accept that token. Check it has the gist permission and try again." : "Could not reach GitHub. Check your internet and try again.";
+    p.className = "hint warnline";
+  }
+  byId("ghConnect").addEventListener("click", connect);
+  byId("ghNow").addEventListener("click", function () { pull(false); });
+  byId("ghOff").addEventListener("click", function () { lsSet(GH_TOK, ""); lsSet(GH_GIST, ""); lastSync = 0; syncReady = true; syncUI(""); });
 
   buildBills();
   load();
@@ -1215,6 +1588,8 @@
   syncBillInputs();
   update();
   showTab(curTab);
+  syncUI();
+  if (!syncReady) pull(false).then(function () { syncReady = true; }, function () { syncReady = true; });
 })();
 </script>
 </body>
