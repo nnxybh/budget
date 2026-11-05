@@ -1749,7 +1749,7 @@
     "Use only the numbers given below. All amounts are Australian dollars: always write them like A$1,050. " +
     "Answer in plain, simple words, like a friend: 2 to 5 short sentences, or a very short list. No headings, no tables. " +
     "When asked if something is affordable, compare it with what is left this fortnight and say what it does to the later fortnights. " +
-    "Remember card spending is taken off straight away. Do not give investment, tax or legal advice. If something is not in the data, say so. Savings pots are money set aside: never count them as money to spend. Realistic numbers include his usual card spending; Free to spend does not.";
+    "Remember card spending is taken off straight away. Do not give investment, tax or legal advice. If something is not in the data, say so. Savings pots are money set aside: never count them as money to spend. Realistic numbers include his usual card spending; Free to spend does not. Lines starting ON SCREEN are exactly what the app shows: use those numbers, labels and day counts, never recount the days yourself, and explain a number the same way the line does.";
 
   function addMsg(role, text) {
     var m = el("div", "msg " + role, text);
@@ -3000,10 +3000,23 @@
   byId("aiPeriod").addEventListener("change", function (e) { aiPeriod = e.target.value; renderAI(); });
 
   /* ---- what Ask can see from the AI and Savings tabs ---- */
+  /* Exactly what the screen shows, with the labels the user sees and how each number is worked out. */
+  function screenContext(L, R, today) {
+    var names = { now: "Right now", ai: "AI", budget: "Budget", save: "Savings" }, c0 = lastCycles[0], late = new Date().getHours() >= 18;
+    L.push("The user is looking at the " + names[curTab] + " tab.");
+    if (!c0) return;
+    var dl = daysLeft(c0, today), cnt = dl + (dl === 1 ? " day" : " days");
+    L.push("ON SCREEN, Right now tab: Free to spend " + money(c0.end) + " = what is left in the bank by " + dayFmt.format(c0.last) + " after bills and Card owed, if nothing more goes on the card. Next pay lands the night of " + dayFmt.format(addDays(c0.last, 1)) + ".");
+    L.push("ON SCREEN, AI tab: Left by " + dayFmt.format(c0.last) + " if you spend as usual = " + money(c0.end - R.rate * dl) + ". It is Free to spend " + money(c0.end) + " minus usual card spending of " + money(R.rate) + " a day x " + cnt + " (" + money(R.rate * dl) + "). " +
+      "Can spend a day = " + money(Math.max(0, c0.end) / Math.max(1, dl)) + ", which is " + money(c0.end) + " divided by " + cnt + ": the most he can put on the card each day in total (not on top of his usual spending) and still be at about A$0 on " + dayFmt.format(c0.last) + ". You usually spend = " + money(R.rate) + " a day. " +
+      "The " + cnt + " run from " + (late ? "tomorrow" : "today") + " to " + dayFmt.format(c0.last) + (late ? "; today is not counted because it is after 6pm and today's spending is already in Card owed" : "") + ".");
+    if (lastBudget) L.push("ON SCREEN, Budget tab (" + (bView === "month" ? "monthly view" : "per pay view") + "): Costs are all his Budget lines (bank and card) added up. The AI tab's You planned / card plan is only the On your card lines: " + money(cardBudget(1)) + " a month.");
+  }
   function aiExtraContext(L) {
     var today = startOfDay(new Date());
     if (pots.length) L.push("Savings pots (money set aside, not in Bank now; never count it as money to spend): " + pots.map(function (p) { var g = numv(p.g); return (p.n || "Pot") + " " + money(numv(p.a)) + (g ? " of a " + money(g) + " goal" + (p.by ? " by " + p.by : "") : ""); }).join("; ") + ".");
     var A = analyse(), R = realistic(A);
+    screenContext(L, R, today);
     L.push("Usual card spending, not counting card bills: about " + money(R.rate) + " a day (" + (R.src === "statements" ? "from the last " + (R.n === 1 ? "card statement" : R.n + " card statements") : "from the budget, no statement uploaded yet") + "). Free to spend does not include this; the AI tab's realistic numbers do.");
     lastCycles.forEach(function (c) { L.push("Realistic " + c.chip + " (after usual card spending): " + money(c.end - R.rate * daysLeft(c, today)) + "."); });
     periods(today).slice(0, 3).forEach(function (P) {
