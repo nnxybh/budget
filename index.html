@@ -392,6 +392,7 @@
   .rev-say.good { color: var(--good); }
   .rev-say.bad { color: var(--bad); }
   .cy-flow.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cy-flow small { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); line-height: 1.3; }
   #aiReview h3, #aiReal h3 { margin: 18px 0 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .rl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
   .rl .nm { font-size: 15px; }
@@ -2539,7 +2540,7 @@
     }
     if (last) {
       var s = A.stats(last.from, last.to), b = cardBudget(1);
-      if (b > 0 && s.spent < b) out.push(["good", "On your last statement you spent " + fmt0.format(b - s.spent) + " less than your card budget. Nice work."]);
+      if (b > 0 && s.spent < b) out.push(["good", "On your last statement you spent " + fmt0.format(b - s.spent) + " less than you planned for your card. Nice work."]);
     }
     pots.forEach(function (p) { var t = potPace(p, today); if (t && out.length < 4) out.push(["", (p.n || "Savings") + ": " + t]); });
     return out.slice(0, 4);
@@ -2673,19 +2674,21 @@
     sel.value = P.key;
     var s = A.stats(P.from, P.to), fac = facOf(P, s), bud = cardBudget(fac), diff = bud - s.spent;
     var top = el("div", "rev-top"), l = el("div"), r = el("div", "rev-vs");
-    l.appendChild(el("span", "k", "Spent on card"));
+    l.appendChild(el("span", "k", "You spent"));
     l.appendChild(el("div", "num", fmt0.format(Math.round(s.spent))));
-    r.appendChild(el("span", "k", P.partial ? "Budget so far" : "Card budget"));
+    r.appendChild(el("span", "k", P.partial ? "Planned so far" : "You planned"));
     r.appendChild(el("div", "", fmt0.format(Math.round(bud))));
     top.appendChild(l); top.appendChild(r);
     box.appendChild(top);
     box.appendChild(bar(s.spent, bud));
-    box.appendChild(el("p", "rev-say " + (diff >= 0 ? "good" : "bad"), bud > 0 ? (diff >= 0 ? fmt0.format(diff) + " under budget" : fmt0.format(-diff) + " over budget") + (P.partial ? " so far." : ".") : "Add card amounts in Budget to compare."));
+    box.appendChild(el("p", "rev-say " + (diff >= 0 ? "good" : "bad"), bud > 0 ? (diff >= 0 ? fmt0.format(diff) + " under your plan" : fmt0.format(-diff) + " over your plan") + (P.partial ? " so far." : ".") : "Add card amounts in Budget to compare."));
+    box.appendChild(el("p", "hint", "Your plan is every On your card line in your Budget tab added up (food, petrol, phone, subscriptions, going out and the rest). It is not just your bills."));
     var flow = el("div", "cy-flow four");
-    [["Bills", s.bills], ["Regular", s.regular], ["One-offs", s.oneoff], ["Everyday", s.everyday + s.fee]].forEach(function (x) {
+    [["Bills", s.bills, "Set bills, like phone and swimming"], ["Regular", s.regular, "Repeats, but not a bill yet"], ["One-offs", s.oneoff, "Big, unusual buys"], ["Everyday", s.everyday + s.fee, "Food, petrol, going out"]].forEach(function (x) {
       var d = el("div");
       d.appendChild(el("span", "", x[0]));
       d.appendChild(el("b", "", fmt0.format(Math.round(x[1]))));
+      d.appendChild(el("small", "", x[2]));
       flow.appendChild(d);
     });
     box.appendChild(flow);
@@ -2693,7 +2696,7 @@
     st.forEach(function (x, i) { if (x.from === P.from && x.to === P.to) ix = i; });
     if (ix >= 0 && st[ix + 1]) {
       var s2 = A.stats(st[ix + 1].from, st[ix + 1].to), ch = s.spent - s2.spent;
-      box.appendChild(el("p", "hint", (ch >= 0 ? fmt0.format(ch) + " more" : fmt0.format(-ch) + " less") + " than the statement before (" + fmt0.format(s2.spent) + ")."));
+      box.appendChild(el("p", "hint", "You spent " + (ch >= 0 ? fmt0.format(ch) + " more" : fmt0.format(-ch) + " less") + " than the month before (" + fmt0.format(s2.spent) + ")."));
     }
     box.appendChild(el("h3", "", "By budget line"));
     Object.keys(s.byLine).filter(function (k) { return s.byLine[k] > 0.5; }).sort(function (a, b) { return s.byLine[b] - s.byLine[a]; }).forEach(function (k) {
@@ -2702,7 +2705,7 @@
       nm.appendChild(dot(c));
       nm.appendChild(document.createTextNode(k));
       var am = el("div", "gamt", fmt0.format(Math.round(s.byLine[k])));
-      am.appendChild(el("small", "", b2 > 0 ? "of " + fmt0.format(Math.round(b2)) : "no budget"));
+      am.appendChild(el("small", "", /a year/.test(k) ? "charged once a year" : b2 > 0 ? "planned " + fmt0.format(Math.round(b2)) + (s.byLine[k] > b2 + 0.5 ? ", " + fmt0.format(Math.round(s.byLine[k] - b2)) + " over" : "") : "not in your Budget tab"));
       w.appendChild(nm); w.appendChild(am); w.appendChild(bar(s.byLine[k], b2, c));
       box.appendChild(w);
     });
@@ -2776,7 +2779,7 @@
     st.forEach(function (x, i) {
       var s = stats[i], b = cardBudget(1), w = el("div", "hist"), top = el("div", "ln");
       var l = el("span", "", shortFmt.format(pd(x.from)) + " to " + shortFmt.format(pd(x.to)));
-      l.appendChild(el("small", "", (b > 0 ? (s.spent <= b ? fmt0.format(b - s.spent) + " under budget" : fmt0.format(s.spent - b) + " over budget") : "No card budget") + (s.oneoff > 0 ? ". One-offs " + fmt0.format(s.oneoff) : "")));
+      l.appendChild(el("small", "", (b > 0 ? (s.spent <= b ? fmt0.format(b - s.spent) + " under your plan" : fmt0.format(s.spent - b) + " over your plan") : "No card plan") + (s.oneoff > 0 ? ". One-offs " + fmt0.format(s.oneoff) : "")));
       top.appendChild(l);
       top.appendChild(el("span", "amt", fmt0.format(Math.round(s.spent))));
       w.appendChild(top);
