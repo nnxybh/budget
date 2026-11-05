@@ -478,9 +478,9 @@
   <!-- ===== AI tab ===== -->
   <div class="panel" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
     <section class="hero" role="status" aria-live="polite">
-      <div class="headline"><span class="k" id="aiHk">Realistic until next pay</span><div class="hv" id="aiHv">$0</div><div class="hs" id="aiHs"></div></div>
+      <div class="headline"><span class="k" id="aiHk">Left by next pay if you spend as usual</span><div class="hv" id="aiHv">$0</div><div class="hs" id="aiHs"></div></div>
       <div class="tiles two" style="margin-top:14px">
-        <div class="tile" style="--tc:#34d399"><div class="k">Safe to spend</div><div class="v" id="aiSafe">$0</div><div class="d">a day until pay</div></div>
+        <div class="tile" style="--tc:#34d399"><div class="k">Can spend a day</div><div class="v" id="aiSafe">$0</div><div class="d">and stay above $0</div></div>
         <div class="tile" style="--tc:#fb923c"><div class="k">You usually spend</div><div class="v" id="aiRate">$0</div><div class="d" id="aiRateD">a day</div></div>
       </div>
       <div class="hero-warn" id="aiWarn"></div>
@@ -511,7 +511,7 @@
     </section>
 
     <section class="card">
-      <h2>Realistic forecast</h2>
+      <h2>If you spend as usual</h2>
       <div id="aiReal"></div>
     </section>
 
@@ -2426,7 +2426,7 @@
       if (A.all.some(function (x) { return A.billOf[x.id] === b && x.d > t.d; })) return;
       out.push({ key: "price|" + b.id + "|" + t.a.toFixed(2), kind: "Price change", title: billName(b) + " is now " + cash(t.a),
         body: "Your bill says " + cash(a) + ", but on " + shortFmt.format(pd(t.d)) + " it was " + cash(t.a) + ". Accept to update the bill in Right now.",
-        act: function () { b.a = String(t.a); syncBillInputs(); }, done: billName(b) + " is now " + cash(t.a) });
+        act: function () { b.a = String(t.a); syncBillInputs(); }, done: billName(b) + " is now " + cash(t.a), nope: "OK. " + billName(b) + " stays at " + cash(a) + ". I won't ask about " + cash(t.a) + " again." });
     });
     var seen = {};
     A.all.slice().reverse().forEach(function (t) {
@@ -2451,7 +2451,7 @@
           if (every === "m") { b.day = when.getDate(); b.next = ""; }
           else { var nx = when; while (nx < today) nx = addDays(nx, every === "w" ? 7 : 14); b.day = 0; b.next = iso(nx); }
           syncBillInputs();
-        }, done: name + " added to your bills" });
+        }, done: name + " added to your bills", nope: "OK. I won't suggest " + name + " " + cash(t.a) + " again." });
     });
     if (last) {
       var s = A.stats(last.from, last.to), prev = st.slice(0, 3);
@@ -2468,7 +2468,7 @@
         out.push({ key: "over|" + line + "|" + last.to, kind: bud > 0 ? "Over budget" : "No budget yet",
           title: line + ": spent " + fmt0.format(spent) + (bud > 0 ? ", budget " + fmt0.format(bud) : ""),
           body: (s.byLine[line] - spent > 1 ? "That leaves out one-offs. " : "") + (prev.length > 1 ? "Your average over " + prev.length + " statements is " + fmt0.format(avg) + " a month. " : "") + "Accept to set " + line + " to " + fmt0.format(to) + " a month in Budget. Or tap No thanks and aim to spend less.",
-          act: function () { r.amtEl.value = String(to); }, done: line + " set to " + fmt0.format(to) + " a month" });
+          act: function () { r.amtEl.value = String(to); }, done: line + " set to " + fmt0.format(to) + " a month", nope: "OK. I'll check " + line + " again when your next statement is in." });
       });
       var offTot = 0;
       prev.forEach(function (x) { offTot += A.stats(x.from, x.to).oneoff; });
@@ -2482,7 +2482,7 @@
             if (!r) rows.forEach(function (x) { if (!r && x.nameEl && x.src === "card" && !x.nameEl.value.trim() && !num(x.amtEl)) r = x; });
             if (!r) return "No free card row in Budget. Clear an Other row first.";
             r.nameEl.value = "Irregular costs"; r.amtEl.value = String(perM);
-          }, done: "Irregular costs added to Budget" });
+          }, done: "Irregular costs added to Budget", nope: "OK. I'll check one-offs again when your next statement is in." });
       }
       if (s.fee > 0) out.push({ key: "fee|" + last.to, kind: "Fees", info: true, title: cash(round2(s.fee)) + " in fees or interest", body: "Paying the whole card bill by the due date usually avoids interest." });
       var owed = num(cardEl), since = 0;
@@ -2492,7 +2492,7 @@
         var want = round2(last.closing + since);
         out.push({ key: "owed|" + last.to + "|" + want, kind: "Card owed", title: "Your statement says " + cash(last.closing) + " is due " + shortFmt.format(pd(last.due)),
           body: "Card owed in Right now is " + cash(owed) + ". Accept to set it to " + cash(want) + (since > 0 ? " (the statement plus " + cash(since) + " spent since)" : "") + ". Skip this if you have already paid some of it.",
-          act: function () { cardEl.value = String(want); }, done: "Card owed set to " + cash(want) });
+          act: function () { cardEl.value = String(want); }, done: "Card owed set to " + cash(want), nope: "OK. Card owed stays at " + cash(owed) + "." });
       }
     }
     var rec = A.all.filter(function (t) { return t.d >= recent && t.a >= 20 && A.cls[t.id] !== "skip" && A.cls[t.id] !== "bill"; });
@@ -2510,7 +2510,7 @@
     if (yes && s.act) { var err = s.act(); if (err) { toast(err); return; } }
     ai.dec[s.key] = { r: yes ? "y" : s.info ? "i" : "n", t: Date.now(), ti: s.title };
     update();
-    toast(yes ? s.done || "Done" : s.info ? "OK" : "OK. I won't suggest that again.");
+    toast(yes ? s.done || "Done" : s.info ? "OK" : s.nope || "OK. I won't suggest that again.");
   }
   function questions(A) {
     var out = [], cut = iso(addDays(startOfDay(new Date()), -120));
@@ -2563,14 +2563,14 @@
     var today = startOfDay(new Date()), A = analyse(), R = realistic(A), c0 = lastCycles[0];
     if (c0) {
       var dl = daysLeft(c0, today), real = c0.end - R.rate * dl;
-      byId("aiHk").textContent = "Realistic by " + dayFmt.format(c0.last);
+      byId("aiHk").textContent = "Left by " + dayFmt.format(c0.last) + " if you spend as usual";
       setVal("aiHv", real);
       byId("aiHv").className = "hv" + (real < 0 ? " neg" : "");
-      byId("aiHs").textContent = "Right now says " + fmt0.format(c0.end) + ". This also takes off about " + fmt0.format(R.rate * dl) + " of usual card spending.";
+      byId("aiHs").textContent = "Right now shows " + fmt0.format(c0.end) + " if you spend nothing more on your card. You usually spend about " + fmt0.format(R.rate) + " a day, so over the next " + dl + (dl === 1 ? " day" : " days") + " that is about " + fmt0.format(R.rate * dl) + " more.";
       setVal("aiSafe", Math.max(0, c0.end) / Math.max(1, dl));
     }
     setVal("aiRate", R.rate);
-    byId("aiRateD").textContent = R.src === "statements" ? "a day, from statements" : "a day, from your budget";
+    byId("aiRateD").textContent = R.src === "statements" ? "a day on your card" : "a day, from budget";
     byId("aiWarn").textContent = R.src === "budget" ? "This uses your budget for now. Upload a card statement to use your real spending." : "";
     var nb = byId("aiNudges"), ns = nudges(A, R, today);
     nb.textContent = "";
@@ -2656,10 +2656,10 @@
     box.textContent = "";
     lastCycles.forEach(function (c) {
       var real = c.end - R.rate * daysLeft(c, today);
-      var ln = ledgerLine(box, c.chip, "Right now says " + fmt0.format(c.end) + " by " + dayFmt.format(c.last), fmt0.format(Math.round(real)), "");
+      var ln = ledgerLine(box, c.chip, "Left by " + dayFmt.format(c.last) + ". With no more card spending: " + fmt0.format(c.end), fmt0.format(Math.round(real)), "");
       ln.lastChild.className = "amt " + (real < 0 ? "bad" : "good");
     });
-    box.appendChild(el("p", "hint", "Realistic means Right now's number, minus about " + fmt0.format(R.rate) + " a day of usual card spending" + (R.src === "statements" ? " worked out from your last " + (R.n === 1 ? "statement" : R.n + " statements") + ", leaving out one-offs" : " from your budget") + ". Right now and Budget are not changed."));
+    box.appendChild(el("p", "hint", "Each number is what you would have left if you keep spending about " + fmt0.format(R.rate) + " a day on your card. " + (R.src === "statements" ? "That is your usual from your last " + (R.n === 1 ? "statement" : R.n + " statements") + ", not counting bills or one-offs." : "That comes from your budget until you upload a statement.") + " Right now and Budget do not change."));
   }
   function renderReview(A, today) {
     var ps = periods(today), sel = byId("aiPeriod"), box = byId("aiReview");
